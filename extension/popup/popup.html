@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Includify Accessibility</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- Top Header with Branding & Status -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-icon" aria-hidden="true">✨</div>
+      <div class="brand-text">
+        <h1 class="app-title">Includify</h1>
+        <span class="app-tagline">Digital Spaces for Every Mind</span>
+      </div>
+    </div>
+    <div class="status-pill" id="backend-status" title="Server Connection Status">
+      <span class="status-dot"></span>
+      <span class="status-text">Checking...</span>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- 1. Primary AI Simplification Action -->
+    <section class="card primary-card">
+      <button id="btn-simplify" class="btn btn-primary" aria-label="Simplify webpage content using Gemini AI">
+        <span class="btn-icon">✨</span>
+        <span class="btn-text">
+          <strong>Simplify Content</strong>
+          <small>AI summary & plain language</small>
+        </span>
+        <span class="badge-shortcut">Alt+Shift+S</span>
+      </button>
+    </section>
+
+    <!-- 2. Core Reading Modes Grid -->
+    <section class="card toggles-grid">
+      <!-- Focus Mode Toggle -->
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <span class="toggle-icon" aria-hidden="true">🎯</span>
+          <div>
+            <label for="toggle-focus" class="toggle-label">Focus Mode</label>
+            <span class="toggle-desc">Clean distraction-free reader</span>
+          </div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-focus" aria-label="Toggle Focus Mode">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <!-- Dyslexia Mode Toggle -->
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <span class="toggle-icon" aria-hidden="true">🔤</span>
+          <div>
+            <label for="toggle-dyslexia" class="toggle-label">Dyslexia-Friendly</label>
+            <span class="toggle-desc">OpenDyslexic font & spacing</span>
+          </div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-dyslexia" aria-label="Toggle Dyslexia-Friendly Mode">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- 3. Reading Font Selector Section -->
+    <section class="card font-card">
+      <div class="card-header">
+        <span class="card-title">🔤 Reading Font</span>
+        <label class="switch font-switch" title="Apply Reading Font Toggle">
+          <input type="checkbox" id="toggle-font-enable" checked aria-label="Apply Reading Font">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <div class="font-options-list" role="radiogroup" aria-label="Reading Font Selection">
+        <label class="font-option-item active" data-font="default">
+          <input type="radio" name="reading-font" value="default" checked>
+          <div class="font-option-content">
+            <span class="font-name" style="font-family: inherit;">Default / Original</span>
+            <span class="font-preview" style="font-family: inherit;">The quick brown fox jumps over the lazy dog.</span>
+          </div>
+        </label>
+
+        <label class="font-option-item" data-font="opendyslexic">
+          <input type="radio" name="reading-font" value="opendyslexic">
+          <div class="font-option-content">
+            <span class="font-name" style="font-family: OpenDyslexic, 'Comic Sans MS', sans-serif;">OpenDyslexic</span>
+            <span class="font-preview" style="font-family: OpenDyslexic, 'Comic Sans MS', sans-serif;">The quick brown fox jumps over the lazy dog.</span>
+          </div>
+        </label>
+
+        <label class="font-option-item" data-font="lexend">
+          <input type="radio" name="reading-font" value="lexend">
+          <div class="font-option-content">
+            <span class="font-name" style="font-family: Lexend, sans-serif;">Lexend</span>
+            <span class="font-preview" style="font-family: Lexend, sans-serif;">The quick brown fox jumps over the lazy dog.</span>
+          </div>
+        </label>
+
+        <label class="font-option-item" data-font="atkinson">
+          <input type="radio" name="reading-font" value="atkinson">
+          <div class="font-option-content">
+            <span class="font-name" style="font-family: 'Atkinson Hyperlegible', sans-serif;">Atkinson Hyperlegible</span>
+            <span class="font-preview" style="font-family: 'Atkinson Hyperlegible', sans-serif;">The quick brown fox jumps over the lazy dog.</span>
+          </div>
+        </label>
+
+        <label class="font-option-item" data-font="verdana">
+          <input type="radio" name="reading-font" value="verdana">
+          <div class="font-option-content">
+            <span class="font-name" style="font-family: Verdana, sans-serif;">Verdana</span>
+            <span class="font-preview" style="font-family: Verdana, sans-serif;">The quick brown fox jumps over the lazy dog.</span>
+          </div>
+        </label>
+
+        <label class="font-option-item" data-font="noto">
+          <input type="radio" name="reading-font" value="noto">
+          <div class="font-option-content">
+            <span class="font-name" style="font-family: 'Noto Sans', sans-serif;">Noto Sans</span>
+            <span class="font-preview" style="font-family: 'Noto Sans', sans-serif;">The quick brown fox jumps over the lazy dog.</span>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- 4. Multilingual Translation Section -->
+    <section class="card translation-card">
+      <div class="card-header">
+        <span class="card-title">🌐 Multilingual Translation</span>
+      </div>
+      <div class="lang-selector-group">
+        <select id="select-target-lang" class="select-lang" aria-label="Select Target Language">
+          <option value="en" data-name="English">English</option>
+          <option value="hi" data-name="Hindi" selected>Hindi (हिन्दी)</option>
+          <option value="bn" data-name="Bengali">Bengali (বাংলা)</option>
+          <option value="ta" data-name="Tamil">Tamil (தமிழ்)</option>
+          <option value="te" data-name="Telugu">Telugu (తెలుగు)</option>
+          <option value="mr" data-name="Marathi">Marathi (मराठी)</option>
+          <option value="gu" data-name="Gujarati">Gujarati (ગુજરાતી)</option>
+        </select>
+      </div>
+      <div class="translation-actions">
+        <button id="btn-translate-page" class="btn btn-secondary" aria-label="Translate webpage content">
+          🌐 Translate
+        </button>
+        <button id="btn-translate-simplify" class="btn btn-secondary btn-accent" aria-label="Translate and simplify content">
+          ✨ Translate & Simplify
+        </button>
+      </div>
+    </section>
+
+    <!-- 5. Audio Read Aloud (TTS) Section -->
+    <section class="card tts-card">
+      <div class="card-header">
+        <span class="card-title">🔊 Read Aloud (TTS)</span>
+        <span class="badge-shortcut">Alt+Shift+R</span>
+      </div>
+      <div class="tts-controls">
+        <button id="btn-tts-play" class="btn btn-secondary btn-icon-only" title="Play / Resume Reading" aria-label="Play or Resume Read Aloud">
+          ▶ Play
+        </button>
+        <button id="btn-tts-pause" class="btn btn-secondary btn-icon-only" title="Pause Reading" aria-label="Pause Read Aloud">
+          ⏸ Pause
+        </button>
+        <button id="btn-tts-stop" class="btn btn-secondary btn-icon-only" title="Stop Reading" aria-label="Stop Read Aloud">
+          ⏹ Stop
+        </button>
+      </div>
+      <div class="slider-group">
+        <div class="slider-header">
+          <label for="slider-tts-rate">Speech Speed</label>
+          <span id="val-tts-rate" class="slider-val">1.0x</span>
+        </div>
+        <input type="range" id="slider-tts-rate" min="0.75" max="2.0" step="0.25" value="1.0" aria-label="Speech Speed Rate">
+      </div>
+    </section>
+
+    <!-- 6. Visual Contrast Themes Section -->
+    <section class="card visual-card">
+      <div class="card-header">
+        <span class="card-title">👁 Contrast Themes</span>
+      </div>
+      <div class="contrast-buttons" role="radiogroup" aria-label="Contrast Mode Options">
+        <button class="btn-theme active" data-theme="normal" title="Original Website Colors" aria-label="Original Contrast">Normal</button>
+        <button class="btn-theme theme-dark" data-theme="dark" title="Dark High Contrast" aria-label="Dark Mode">Dark</button>
+        <button class="btn-theme theme-yellow" data-theme="high-contrast" title="Yellow on Black" aria-label="Yellow on Black High Contrast">Contrast</button>
+        <button class="btn-theme theme-sepia" data-theme="sepia" title="Soft Sepia Warm Tint" aria-label="Soft Sepia Mode">Sepia</button>
+        <button class="btn-theme theme-blue" data-theme="blue-tint" title="Blue Light Reduction" aria-label="Soft Blue Tint">Blue Tint</button>
+      </div>
+    </section>
+
+    <!-- 7. Fine-Tune Typography Accordion -->
+    <section class="card settings-card">
+      <button id="btn-toggle-settings" class="settings-accordion-btn" aria-expanded="false">
+        <span>⚙️ Fine-Tune Spacing & Font Size</span>
+        <span class="accordion-arrow">▼</span>
+      </button>
+
+      <div id="settings-panel" class="settings-panel hidden">
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-font-size">Font Size</label>
+            <span id="val-font-size" class="slider-val">100%</span>
+          </div>
+          <input type="range" id="slider-font-size" min="80" max="160" step="10" value="100" aria-label="Adjust Font Size Percentage">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-line-height">Line Height</label>
+            <span id="val-line-height" class="slider-val">1.6x</span>
+          </div>
+          <input type="range" id="slider-line-height" min="1.2" max="2.4" step="0.2" value="1.6" aria-label="Adjust Line Spacing">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-letter-spacing">Letter Spacing</label>
+            <span id="val-letter-spacing" class="slider-val">0px</span>
+          </div>
+          <input type="range" id="slider-letter-spacing" min="0" max="5" step="0.5" value="0" aria-label="Adjust Letter Spacing in Pixels">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="slider-paragraph-spacing">Paragraph Spacing</label>
+            <span id="val-paragraph-spacing" class="slider-val">1.5em</span>
+          </div>
+          <input type="range" id="slider-paragraph-spacing" min="1.0" max="3.0" step="0.25" value="1.5" aria-label="Adjust Paragraph Spacing in Em units">
+        </div>
+
+        <button id="btn-reset-settings" class="btn btn-outline btn-sm" aria-label="Reset All Settings to Defaults">
+          🔄 Reset to Defaults
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Notification Toast Container -->
+  <div id="toast" class="toast hidden" role="alert" aria-live="polite"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

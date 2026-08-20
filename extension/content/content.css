@@ -1,0 +1,597 @@
+/* Includify Content Script Isolated Overlay & Injected Styles */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Lexend:wght@300;400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+/* OpenDyslexic Web Font Definition */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: local('OpenDyslexic'), local('Comic Sans MS'), local('Comic Sans');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* -------------------------------------------------------------
+ * 1. Global Contrast & Typography Classes (Applied to <body>)
+ * ------------------------------------------------------------- */
+
+/* Dyslexia Mode */
+body.includify-dyslexia-active,
+body.includify-dyslexia-active * {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Lexend', sans-serif !important;
+  letter-spacing: 0.08em !important;
+  word-spacing: 0.12em !important;
+}
+
+/* -------------------------------------------------------------
+ * 1b. Accessibility Reading Font System
+ * Applies font strictly to readable elements (article, main, p, h1-h6, li, blockquote)
+ * ------------------------------------------------------------- */
+
+/* OpenDyslexic */
+body.includify-font-opendyslexic article,
+body.includify-font-opendyslexic main,
+body.includify-font-opendyslexic p,
+body.includify-font-opendyslexic h1,
+body.includify-font-opendyslexic h2,
+body.includify-font-opendyslexic h3,
+body.includify-font-opendyslexic h4,
+body.includify-font-opendyslexic h5,
+body.includify-font-opendyslexic h6,
+body.includify-font-opendyslexic li,
+body.includify-font-opendyslexic blockquote,
+body.includify-font-opendyslexic .includify-reader-paragraph,
+body.includify-font-opendyslexic .includify-reader-container {
+  font-family: OpenDyslexic, 'Comic Sans MS', sans-serif !important;
+}
+
+/* Lexend */
+body.includify-font-lexend article,
+body.includify-font-lexend main,
+body.includify-font-lexend p,
+body.includify-font-lexend h1,
+body.includify-font-lexend h2,
+body.includify-font-lexend h3,
+body.includify-font-lexend h4,
+body.includify-font-lexend h5,
+body.includify-font-lexend h6,
+body.includify-font-lexend li,
+body.includify-font-lexend blockquote,
+body.includify-font-lexend .includify-reader-paragraph,
+body.includify-font-lexend .includify-reader-container {
+  font-family: Lexend, sans-serif !important;
+}
+
+/* Atkinson Hyperlegible */
+body.includify-font-atkinson article,
+body.includify-font-atkinson main,
+body.includify-font-atkinson p,
+body.includify-font-atkinson h1,
+body.includify-font-atkinson h2,
+body.includify-font-atkinson h3,
+body.includify-font-atkinson h4,
+body.includify-font-atkinson h5,
+body.includify-font-atkinson h6,
+body.includify-font-atkinson li,
+body.includify-font-atkinson blockquote,
+body.includify-font-atkinson .includify-reader-paragraph,
+body.includify-font-atkinson .includify-reader-container {
+  font-family: 'Atkinson Hyperlegible', sans-serif !important;
+}
+
+/* Verdana */
+body.includify-font-verdana article,
+body.includify-font-verdana main,
+body.includify-font-verdana p,
+body.includify-font-verdana h1,
+body.includify-font-verdana h2,
+body.includify-font-verdana h3,
+body.includify-font-verdana h4,
+body.includify-font-verdana h5,
+body.includify-font-verdana h6,
+body.includify-font-verdana li,
+body.includify-font-verdana blockquote,
+body.includify-font-verdana .includify-reader-paragraph,
+body.includify-font-verdana .includify-reader-container {
+  font-family: Verdana, sans-serif !important;
+}
+
+/* Noto Sans */
+body.includify-font-noto article,
+body.includify-font-noto main,
+body.includify-font-noto p,
+body.includify-font-noto h1,
+body.includify-font-noto h2,
+body.includify-font-noto h3,
+body.includify-font-noto h4,
+body.includify-font-noto h5,
+body.includify-font-noto h6,
+body.includify-font-noto li,
+body.includify-font-noto blockquote,
+body.includify-font-noto .includify-reader-paragraph,
+body.includify-font-noto .includify-reader-container {
+  font-family: 'Noto Sans', sans-serif !important;
+}
+
+/* Contrast Modes */
+body.includify-theme-dark {
+  background-color: #121212 !important;
+  color: #f8f9fa !important;
+}
+body.includify-theme-dark p,
+body.includify-theme-dark h1,
+body.includify-theme-dark h2,
+body.includify-theme-dark h3,
+body.includify-theme-dark span,
+body.includify-theme-dark div,
+body.includify-theme-dark li {
+  color: #e2e8f0 !important;
+  background-color: transparent !important;
+}
+
+body.includify-theme-high-contrast {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+body.includify-theme-high-contrast p,
+body.includify-theme-high-contrast h1,
+body.includify-theme-high-contrast h2,
+body.includify-theme-high-contrast h3,
+body.includify-theme-high-contrast span,
+body.includify-theme-high-contrast div,
+body.includify-theme-high-contrast a,
+body.includify-theme-high-contrast li {
+  color: #ffff00 !important;
+  background-color: #000000 !important;
+}
+
+body.includify-theme-sepia {
+  background-color: #fbf0d9 !important;
+  color: #432818 !important;
+}
+body.includify-theme-sepia p,
+body.includify-theme-sepia h1,
+body.includify-theme-sepia h2,
+body.includify-theme-sepia h3,
+body.includify-theme-sepia span,
+body.includify-theme-sepia div,
+body.includify-theme-sepia li {
+  color: #432818 !important;
+  background-color: transparent !important;
+}
+
+body.includify-theme-blue-tint {
+  background-color: #ebf3f9 !important;
+  color: #1e3a8a !important;
+}
+body.includify-theme-blue-tint p,
+body.includify-theme-blue-tint h1,
+body.includify-theme-blue-tint h2,
+body.includify-theme-blue-tint h3,
+body.includify-theme-blue-tint span,
+body.includify-theme-blue-tint div,
+body.includify-theme-blue-tint li {
+  color: #1e3a8a !important;
+  background-color: transparent !important;
+}
+
+/* Pause Animations */
+body.includify-reduce-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Active TTS Sentence Highlight */
+.includify-highlight-sentence {
+  background-color: #fef08a !important;
+  color: #0f172a !important;
+  padding: 2px 4px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px #eab308;
+}
+
+/* -------------------------------------------------------------
+ * 2. Includify Reader View Focus Mode Engine (#includify-focus-reader-root)
+ * ------------------------------------------------------------- */
+body.includify-focus-active-body {
+  overflow: hidden !important;
+}
+
+#includify-focus-reader-root {
+  all: initial;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: #f8fafc !important;
+  z-index: 999990 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  color: #0f172a !important;
+  box-sizing: border-box !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Reader Container Card */
+.includify-reader-container {
+  max-width: 740px !important;
+  margin: 40px auto 140px auto !important;
+  padding: 44px 40px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06), 0 4px 6px -2px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid #e2e8f0 !important;
+  opacity: 1.0 !important;
+  filter: none !important;
+}
+
+.includify-reader-header {
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+}
+
+.includify-reader-badge {
+  display: inline-block;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.includify-reader-title {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+  color: #0f172a !important;
+  margin: 0 0 10px 0 !important;
+  letter-spacing: -0.4px !important;
+}
+
+.includify-reader-meta {
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.includify-reader-body {
+  font-size: 17px;
+  line-height: 1.75;
+  color: #1e293b;
+}
+
+/* ALL PARAGRAPHS 100% VISIBLE & READABLE (NO BLUR, NO FAINT TEXT) */
+.includify-reader-paragraph {
+  font-size: 1em !important;
+  line-height: 1.75 !important;
+  color: #334155 !important;
+  opacity: 1.0 !important;
+  filter: none !important;
+  visibility: visible !important;
+  margin-bottom: 1.5em !important;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  border-left: 4px solid transparent !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease !important;
+}
+
+/* Active Paragraph Spotlight */
+.includify-reader-spotlight-active {
+  background-color: #f1f5f9 !important;
+  border-left: 4px solid #6366f1 !important;
+  color: #0f172a !important;
+  opacity: 1.0 !important;
+  filter: none !important;
+}
+
+/* Dark Theme Overrides for Reader View */
+body.includify-theme-dark #includify-focus-reader-root {
+  background-color: #0f172a !important;
+  color: #f8f9fa !important;
+}
+
+body.includify-theme-dark .includify-reader-container {
+  background: #1e293b !important;
+  color: #f8f9fa !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.includify-theme-dark .includify-reader-title {
+  color: #f8f9fa !important;
+}
+
+body.includify-theme-dark .includify-reader-paragraph {
+  color: #cbd5e1 !important;
+}
+
+body.includify-theme-dark .includify-reader-spotlight-active {
+  background-color: #334155 !important;
+  border-left-color: #818cf8 !important;
+  color: #ffffff !important;
+}
+
+/* Top Progress Bar */
+#includify-focus-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  z-index: 999999;
+  transition: width 0.1s linear;
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.5);
+}
+
+/* Floating Focus Toolbar */
+#includify-focus-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 36px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 999999;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  max-width: 94vw;
+  overflow-x: auto;
+}
+
+.includify-tb-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  color: #818cf8;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.includify-tb-progress {
+  font-size: 12px;
+  color: #cbd5e1;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.includify-tb-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.includify-tb-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.includify-tb-btn:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+.includify-tb-exit {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #f87171 !important;
+  margin-left: 4px;
+}
+
+.includify-tb-exit:hover {
+  background: #dc2626 !important;
+}
+
+@media (max-width: 768px) {
+  .includify-focus-content {
+    margin: 16px auto 100px auto !important;
+    padding: 24px 16px !important;
+    max-width: 96% !important;
+  }
+  #includify-focus-toolbar {
+    bottom: 12px;
+    padding: 6px 10px;
+    gap: 4px;
+  }
+  .includify-tb-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
+/* -------------------------------------------------------------
+ * 3. Includify AI Reader Drawer / Modal Overlay (#includify-root)
+ * ------------------------------------------------------------- */
+#includify-root {
+  all: initial;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 440px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  z-index: 999999;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: includifySlideIn 0.3s ease-out;
+}
+
+@keyframes includifySlideIn {
+  from { transform: translateX(50px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+#includify-root .reader-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#includify-root .reader-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#includify-root .btn-close {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#includify-root .btn-close:hover {
+  background: rgba(255,255,255,0.4);
+}
+
+#includify-root .reader-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+#includify-root .summary-box {
+  background: #eef2ff;
+  border-left: 4px solid #6366f1;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+#includify-root .summary-box h3 {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #4338ca;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#includify-root .summary-box p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e1b4b;
+}
+
+#includify-root .key-points-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+#includify-root .key-points-box h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+#includify-root .key-points-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+#includify-root .key-points-box li {
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  color: #334155;
+  line-height: 1.4;
+}
+
+#includify-root .simplified-text-box {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+#includify-root .simplified-text-box h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+#includify-root .simplified-text-box p {
+  font-size: 14.5px;
+  line-height: 1.65;
+  margin-bottom: 12px;
+  color: #1e293b;
+}
+
+#includify-root .reader-footer {
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#includify-root .btn-reader-action {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#includify-root .loading-spinner {
+  text-align: center;
+  padding: 30px;
+  color: #6366f1;
+  font-weight: 600;
+}
