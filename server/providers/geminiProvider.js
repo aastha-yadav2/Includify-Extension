@@ -1,0 +1,169 @@
+const BaseAIProvider = require('./baseProvider');
+const { GoogleGenAI } = require('@google/genai');
+
+class GeminiProvider extends BaseAIProvider {
+  constructor(apiKey) {
+    super('gemini');
+    this.apiKey = apiKey;
+    this.client = null;
+
+    if (apiKey && apiKey !== 'your_gemini_key' && apiKey !== 'your_gemini_api_key_here') {
+      try {
+        this.client = new GoogleGenAI({ apiKey });
+      } catch (err) {
+        console.warn(`[GeminiProvider] Initialization error: ${err.message}`);
+      }
+    }
+  }
+
+  isConfigured() {
+    return !!(this.client && this.apiKey);
+  }
+
+  async generateSimplification(text, options = {}) {
+    if (!this.isConfigured()) {
+      const err = new Error('Gemini API Key is missing or default');
+      err.status = 401;
+      throw err;
+    }
+
+    const { title = 'Web Content', url = 'Unknown' } = options;
+    const trimmedText = text.trim().substring(0, 6000);
+
+    const prompt = `
+You are the AI accessibility engine for Includify.
+
+TASK:
+Simplify the provided webpage content for users with cognitive and reading difficulties.
+
+RULES:
+- Preserve original meaning.
+- Do not invent facts.
+- Use short sentences.
+- Replace difficult vocabulary with simpler words.
+- Keep important names, numbers and facts unchanged.
+
+Webpage Title: ${title}
+Webpage URL: ${url}
+
+Original Content:
+"""
+${trimmedText}
+"""
+
+Return ONLY a valid JSON object matching this exact schema:
+{
+  "simplifiedText": "...",
+  "summary": "...",
+  "keyPoints": ["...", "..."]
+}
+`;
+
+    try {
+      const response = await this.client.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+          maxOutputTokens: 1000
+        }
+      });
+
+      const responseText = response.text;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Gemini response returned invalid JSON structure');
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        simplifiedText: parsed.simplifiedText || trimmedText,
+        summary: parsed.summary || 'Summary unavailable.',
+        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+      };
+    } catch (err) {
+      throw this._parseGeminiError(err);
+    }
+  }
+
+  async translateText(text, targetLanguage = 'hi', options = {}) {
+    if (!this.isConfigured()) {
+      const err = new Error('Gemini API Key is missing or default');
+      err.status = 401;
+      throw err;
+    }
+
+    const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
+    const trimmedText = text.trim().substring(0, 6000);
+
+    const prompt = `
+You are an expert translator and cognitive accessibility assistant.
+Translate the following web article into ${targetLanguageName} (language code: ${targetLanguage}).
+
+${simplify ? `IMPORTANT REQUIREMENT: Simplify the translation using easy, clear, plain language in ${targetLanguageName} suitable for readers with dyslexia or low reading proficiency.` : 'Preserve the original facts, context, and meaning accurately.'}
+
+Title: ${title}
+Original Text:
+"""
+${trimmedText}
+"""
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{
+  "translatedText": "...",
+  "summary": "...",
+  "keyPoints": ["...", "..."]
+}
+`;
+
+    try {
+      const response = await this.client.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+          maxOutputTokens: 1000
+        }
+      });
+
+      const responseText = response.text;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Gemini response returned invalid JSON structure');
+
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        translatedText: parsed.translatedText || trimmedText,
+        summary: parsed.summary || `${targetLanguageName} Summary unavailable.`,
+        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+      };
+    } catch (err) {
+      throw this._parseGeminiError(err);
+    }
+  }
+
+  _parseGeminiError(err) {
+    const msg = err.message || '';
+    let status = err.status || err.statusCode || 500;
+
+    if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('Quota exceeded')) {
+      status = 429;
+    } else if (msg.includes('503') || msg.includes('UNAVAILABLE')) {
+      status = 503;
+    } else if (msg.includes('504') || msg.includes('DEADLINE_EXCEEDED')) {
+      status = 504;
+    } else if (msg.includes('401') || msg.includes('API_KEY_INVALID') || msg.includes('UNAUTHENTICATED')) {
+      status = 401;
+    } else if (msg.includes('403') || msg.includes('PERMISSION_DENIED')) {
+      status = 403;
+    } else if (msg.includes('400') || msg.includes('INVALID_ARGUMENT')) {
+      status = 400;
+    }
+
+    const parsedErr = new Error(`Gemini Provider Error [${status}]: ${msg}`);
+    parsedErr.status = status;
+    parsedErr.rawMessage = msg;
+    return parsedErr;
+  }
+}
+
+module.exports = GeminiProvider;
