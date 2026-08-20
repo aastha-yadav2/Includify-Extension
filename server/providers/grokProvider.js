@@ -12,7 +12,7 @@ class GrokProvider extends BaseAIProvider {
 
   async generateSimplification(text, options = {}) {
     if (!this.isConfigured()) {
-      const err = new Error('xAI Grok API Key is missing or default');
+      const err = new Error('Grok/Groq API Key is missing or default');
       err.status = 401;
       throw err;
     }
@@ -27,7 +27,7 @@ TASK:
 Simplify the provided webpage content for users with cognitive and reading difficulties.
 
 RULES:
-- Preserve original meaning.
+- Preserve original meaning accurately.
 - Do not invent facts.
 - Use short sentences.
 - Replace difficult vocabulary with simpler words.
@@ -49,12 +49,12 @@ Return ONLY a valid JSON object matching this exact schema:
 }
 `;
 
-    return await this._callGrokAPI(prompt, trimmedText);
+    return await this._callAIAPI(prompt, trimmedText);
   }
 
   async translateText(text, targetLanguage = 'hi', options = {}) {
     if (!this.isConfigured()) {
-      const err = new Error('xAI Grok API Key is missing or default');
+      const err = new Error('Grok/Groq API Key is missing or default');
       err.status = 401;
       throw err;
     }
@@ -82,19 +82,26 @@ Respond ONLY with a valid JSON object matching this exact schema:
 }
 `;
 
-    return await this._callGrokAPI(prompt, trimmedText);
+    return await this._callAIAPI(prompt, trimmedText);
   }
 
-  async _callGrokAPI(userPrompt, fallbackText) {
+  async _callAIAPI(userPrompt, fallbackText) {
+    const isGroqKey = this.apiKey.startsWith('gsk_');
+    const endpoint = isGroqKey 
+      ? 'https://api.groq.com/openai/v1/chat/completions' 
+      : 'https://api.x.ai/v1/chat/completions';
+    
+    const modelName = isGroqKey ? 'openai/gpt-oss-120b' : 'grok-2-latest';
+
     try {
-      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: 'grok-2-latest',
+          model: modelName,
           messages: [
             { role: 'system', content: 'You are an AI accessibility assistant that responds strictly in valid JSON.' },
             { role: 'user', content: userPrompt }
@@ -106,16 +113,19 @@ Respond ONLY with a valid JSON object matching this exact schema:
 
       if (!response.ok) {
         const errText = await response.text().catch(() => '');
-        const err = new Error(`xAI Grok API returned HTTP status ${response.status}: ${errText}`);
+        const err = new Error(`Fallback AI API returned HTTP status ${response.status}: ${errText}`);
         err.status = response.status;
         throw err;
       }
 
       const data = await response.json();
       const contentStr = data.choices?.[0]?.message?.content;
-      if (!contentStr) throw new Error('xAI Grok response body was empty');
+      if (!contentStr) throw new Error('Fallback AI response body was empty');
 
-      const parsed = JSON.parse(contentStr);
+      // Clean JSON string
+      const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : contentStr);
+
       return {
         simplifiedText: parsed.simplifiedText || parsed.translatedText || fallbackText,
         translatedText: parsed.translatedText || parsed.simplifiedText || fallbackText,
@@ -124,7 +134,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
       };
     } catch (err) {
       let status = err.status || 500;
-      const parsedErr = new Error(`Grok Provider Error [${status}]: ${err.message}`);
+      const parsedErr = new Error(`Fallback Provider Error [${status}]: ${err.message}`);
       parsedErr.status = status;
       throw parsedErr;
     }
