@@ -28,7 +28,7 @@ class GeminiProvider extends BaseAIProvider {
     }
 
     const { title = 'Web Content', url = 'Unknown' } = options;
-    const trimmedText = text.trim().substring(0, 4000);
+    const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
 You are the AI accessibility engine for Includify.
@@ -66,7 +66,7 @@ Return ONLY a valid JSON object matching this exact schema:
         config: {
           responseMimeType: 'application/json',
           temperature: 0.1,
-          maxOutputTokens: 800
+          maxOutputTokens: 2048
         }
       });
 
@@ -93,7 +93,7 @@ Return ONLY a valid JSON object matching this exact schema:
     }
 
     const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
-    const trimmedText = text.trim().substring(0, 4000);
+    const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
 You are an expert translator and cognitive accessibility assistant.
@@ -122,7 +122,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
         config: {
           responseMimeType: 'application/json',
           temperature: 0.1,
-          maxOutputTokens: 800
+          maxOutputTokens: 2048
         }
       });
 

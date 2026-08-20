@@ -18,7 +18,7 @@ class GrokProvider extends BaseAIProvider {
     }
 
     const { title = 'Web Content', url = 'Unknown' } = options;
-    const trimmedText = text.trim().substring(0, 4000);
+    const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
 You are the AI accessibility engine for Includify.
@@ -60,7 +60,7 @@ Return ONLY a valid JSON object matching this exact schema:
     }
 
     const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
-    const trimmedText = text.trim().substring(0, 4000);
+    const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
 You are an expert translator and cognitive accessibility assistant.
@@ -107,7 +107,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
-          max_tokens: 800,
+          max_tokens: 2048,
           response_format: { type: 'json_object' }
         })
       });
