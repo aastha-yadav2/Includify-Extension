@@ -28,7 +28,7 @@ class GeminiProvider extends BaseAIProvider {
     }
 
     const { title = 'Web Content', url = 'Unknown' } = options;
-    const trimmedText = text.trim().substring(0, 6000);
+    const trimmedText = text.trim().substring(0, 4000);
 
     const prompt = `
 You are the AI accessibility engine for Includify.
@@ -65,8 +65,8 @@ Return ONLY a valid JSON object matching this exact schema:
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
-          temperature: 0.2,
-          maxOutputTokens: 1000
+          temperature: 0.1,
+          maxOutputTokens: 800
         }
       });
 
@@ -93,7 +93,7 @@ Return ONLY a valid JSON object matching this exact schema:
     }
 
     const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
-    const trimmedText = text.trim().substring(0, 6000);
+    const trimmedText = text.trim().substring(0, 4000);
 
     const prompt = `
 You are an expert translator and cognitive accessibility assistant.
@@ -121,8 +121,8 @@ Respond ONLY with a valid JSON object matching this exact schema:
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
-          temperature: 0.2,
-          maxOutputTokens: 1000
+          temperature: 0.1,
+          maxOutputTokens: 800
         }
       });
 
@@ -142,26 +142,31 @@ Respond ONLY with a valid JSON object matching this exact schema:
   }
 
   _parseGeminiError(err) {
-    const msg = err.message || '';
+    const msg = (err.message || err.toString() || '').toLowerCase();
     let status = err.status || err.statusCode || 500;
 
-    if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('Quota exceeded')) {
+    if (
+      msg.includes('429') || 
+      msg.includes('resource_exhausted') || 
+      msg.includes('quota') || 
+      msg.includes('rate limit') ||
+      msg.includes('exceeded') ||
+      msg.includes('limit reached')
+    ) {
       status = 429;
-    } else if (msg.includes('503') || msg.includes('UNAVAILABLE')) {
+    } else if (msg.includes('503') || msg.includes('unavailable')) {
       status = 503;
-    } else if (msg.includes('504') || msg.includes('DEADLINE_EXCEEDED')) {
+    } else if (msg.includes('504') || msg.includes('deadline')) {
       status = 504;
-    } else if (msg.includes('401') || msg.includes('API_KEY_INVALID') || msg.includes('UNAUTHENTICATED')) {
+    } else if (msg.includes('401') || msg.includes('api_key') || msg.includes('unauthenticated')) {
       status = 401;
-    } else if (msg.includes('403') || msg.includes('PERMISSION_DENIED')) {
+    } else if (msg.includes('403') || msg.includes('permission_denied')) {
       status = 403;
-    } else if (msg.includes('400') || msg.includes('INVALID_ARGUMENT')) {
-      status = 400;
     }
 
-    const parsedErr = new Error(`Gemini Provider Error [${status}]: ${msg}`);
+    const parsedErr = new Error(`Gemini Provider Error [${status}]: ${err.message || msg}`);
     parsedErr.status = status;
-    parsedErr.rawMessage = msg;
+    parsedErr.rawMessage = err.message || msg;
     return parsedErr;
   }
 }
