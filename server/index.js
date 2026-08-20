@@ -14,21 +14,35 @@ app.use(cors({
 
 app.use(express.json({ limit: '5mb' }));
 
-// Initialize Google GenAI SDK with GEMINI_API_KEY from server/.env
-let genAI = null;
-const apiKey = process.env.GEMINI_API_KEY;
+// Read environment variables
+const PRIMARY_AI = process.env.PRIMARY_AI || 'gemini';
+const FALLBACK_AI = process.env.FALLBACK_AI || 'grok';
 
-if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+// Initialize Google GenAI SDK
+let genAI = null;
+const geminiApiKey = process.env.GEMINI_API_KEY;
+
+if (geminiApiKey && geminiApiKey !== 'your_gemini_key' && geminiApiKey !== 'your_gemini_api_key_here') {
   try {
     const { GoogleGenAI } = require('@google/genai');
-    genAI = new GoogleGenAI({ apiKey });
-    console.log('✅ Google GenAI SDK initialized successfully with Gemini AI Studio Auth API key.');
+    genAI = new GoogleGenAI({ apiKey: geminiApiKey });
+    console.log('✅ Google GenAI SDK initialized successfully with Gemini AI Studio key.');
   } catch (err) {
     console.warn('⚠️ Warning: Failed to initialize Google GenAI SDK:', err.message);
   }
 } else {
-  console.log('ℹ️ Notice: GEMINI_API_KEY is not set in .env. Smart fallback mode enabled.');
+  console.log('ℹ️ Notice: GEMINI_API_KEY is missing or default in .env.');
 }
+
+const xaiApiKey = process.env.XAI_API_KEY;
+const isGrokAvailable = !!(xaiApiKey && xaiApiKey !== 'your_grok_key' && xaiApiKey.trim().length > 0);
+if (isGrokAvailable) {
+  console.log('✅ xAI Grok API key detected for Fallback AI.');
+} else {
+  console.log('ℹ️ Notice: XAI_API_KEY is not set in .env.');
+}
+
+console.log(`⚙️ Includify AI Hierarchy Configured: PRIMARY=${PRIMARY_AI.toUpperCase()} | FALLBACK=${FALLBACK_AI.toUpperCase()}`);
 
 /**
  * Health Check Endpoint
@@ -37,33 +51,22 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     app: 'Includify Accessibility Backend',
-    version: '1.0.0',
+    version: '1.2.0',
+    primaryAI: PRIMARY_AI,
+    fallbackAI: FALLBACK_AI,
     geminiConfigured: !!genAI,
+    grokConfigured: isGrokAvailable,
+    activeProvider: genAI ? 'gemini' : (isGrokAvailable ? 'grok' : 'local-fallback'),
     timestamp: new Date().toISOString()
   });
 });
 
-/**
- * Core AI Text Simplification Endpoint
- * Receives webpage text and calls Gemini API to simplify language, produce a summary, and extract key points.
- */
-app.post('/api/simplify', async (req, res) => {
-  try {
-    const { text, title, url } = req.body;
+/* ==========================================================================
+   AI PROVIDER ENGINES (GEMINI & GROK)
+   ========================================================================== */
 
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      return res.status(400).json({
-        error: 'Invalid Request',
-        message: 'No readable text content provided to simplify.'
-      });
-    }
-
-    const trimmedText = text.trim().substring(0, 6000); // Optimized payload size for sub-second AI latency
-
-    // If Gemini client is active, request real Gemini API response
-    if (genAI) {
-      try {
-        const prompt = `
+async function callGeminiSimplification(text, title, url) {
+  const prompt = `
 You are the AI accessibility engine for Includify.
 
 TASK:
@@ -84,7 +87,7 @@ Webpage URL: ${url || 'Unknown'}
 
 Original Content:
 """
-${trimmedText}
+${text}
 """
 
 Return ONLY a valid JSON object matching this exact schema:
@@ -99,32 +102,218 @@ Return ONLY a valid JSON object matching this exact schema:
 }
 `;
 
-        const response = await genAI.models.generateContent({
-          model: 'gemini-3.6-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            temperature: 0.2,
-            maxOutputTokens: 1000
-          }
-        });
+  const response = await genAI.models.generateContent({
+    model: 'gemini-3.6-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      temperature: 0.2,
+      maxOutputTokens: 1000
+    }
+  });
 
-        const responseText = response.text;
+  const responseText = response.text;
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Gemini output invalid JSON formatting');
+  
+  return JSON.parse(jsonMatch[0]);
+}
 
-        // Extract JSON string from response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
+async function callGrokSimplification(text, title, url) {
+  if (!isGrokAvailable) throw new Error('XAI_API_KEY is not configured in .env');
+
+  const prompt = `
+You are the AI accessibility engine for Includify.
+
+TASK:
+Simplify the provided webpage content for users with cognitive and reading difficulties.
+
+RULES:
+- Preserve the original meaning.
+- Do not invent facts.
+- Use short sentences.
+- Replace difficult vocabulary with simpler words.
+- Keep important names, numbers and facts unchanged.
+
+Webpage Title: ${title || 'Web Content'}
+Original Content:
+"""
+${text}
+"""
+
+Return ONLY a valid JSON object matching this exact schema:
+{
+  "simplifiedText": "Simplified clear text...",
+  "summary": "Concise summary...",
+  "keyPoints": ["Key point 1", "Key point 2", "Key point 3"]
+}
+`;
+
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${xaiApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'grok-2-latest',
+      messages: [
+        { role: 'system', content: 'You are an AI accessibility engine that responds strictly in valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`xAI Grok API returned HTTP status ${response.status}`);
+  }
+
+  const data = await response.json();
+  const contentStr = data.choices?.[0]?.message?.content;
+  if (!contentStr) throw new Error('xAI Grok response body empty');
+
+  return JSON.parse(contentStr);
+}
+
+async function callGeminiTranslation(text, title, targetLanguage, targetLanguageName, simplify) {
+  const prompt = `
+You are an expert translator and cognitive accessibility assistant.
+Translate the following web article into ${targetLanguageName} (language code: ${targetLanguage}).
+
+${simplify ? `IMPORTANT REQUIREMENT: Simplify the translation using easy, clear, plain language in ${targetLanguageName} suitable for readers with dyslexia or low reading proficiency.` : 'Preserve the original facts, context, and meaning accurately.'}
+
+Title: ${title || 'Web Page'}
+Original Text:
+"""
+${text}
+"""
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{
+  "translatedText": "Full translated article text in ${targetLanguageName}. Keep paragraph breaks.",
+  "summary": "A 2-3 sentence summary in ${targetLanguageName}.",
+  "keyPoints": [
+    "Key takeaway point 1 in ${targetLanguageName}",
+    "Key takeaway point 2 in ${targetLanguageName}",
+    "Key takeaway point 3 in ${targetLanguageName}"
+  ]
+}
+`;
+
+  const response = await genAI.models.generateContent({
+    model: 'gemini-3.6-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      temperature: 0.2,
+      maxOutputTokens: 1000
+    }
+  });
+
+  const responseText = response.text;
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Gemini output invalid JSON formatting');
+
+  return JSON.parse(jsonMatch[0]);
+}
+
+async function callGrokTranslation(text, title, targetLanguage, targetLanguageName, simplify) {
+  if (!isGrokAvailable) throw new Error('XAI_API_KEY is not configured in .env');
+
+  const prompt = `
+You are an expert translator and cognitive accessibility assistant.
+Translate the following web article into ${targetLanguageName} (language code: ${targetLanguage}).
+
+${simplify ? `IMPORTANT REQUIREMENT: Simplify the translation using easy, clear, plain language in ${targetLanguageName}.` : 'Preserve the original facts, context, and meaning accurately.'}
+
+Title: ${title || 'Web Page'}
+Original Text:
+"""
+${text}
+"""
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{
+  "translatedText": "Full translated article text in ${targetLanguageName}.",
+  "summary": "A 2-3 sentence summary in ${targetLanguageName}.",
+  "keyPoints": ["Point 1", "Point 2", "Point 3"]
+}
+`;
+
+  const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${xaiApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'grok-2-latest',
+      messages: [
+        { role: 'system', content: 'You are an AI translator that responds strictly in valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`xAI Grok API returned HTTP status ${response.status}`);
+  }
+
+  const data = await response.json();
+  const contentStr = data.choices?.[0]?.message?.content;
+  if (!contentStr) throw new Error('xAI Grok response body empty');
+
+  return JSON.parse(contentStr);
+}
+
+/**
+ * Core AI Text Simplification Endpoint with Dual AI Provider Hierarchy
+ */
+app.post('/api/simplify', async (req, res) => {
+  try {
+    const { text, title, url } = req.body;
+
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Invalid Request',
+        message: 'No readable text content provided to simplify.'
+      });
+    }
+
+    const trimmedText = text.trim().substring(0, 6000);
+    const providers = [PRIMARY_AI, FALLBACK_AI].filter((v, i, a) => a.indexOf(v) === i);
+
+    for (const provider of providers) {
+      try {
+        if (provider === 'gemini' && genAI) {
+          console.log('✨ Invoking Primary AI: Google Gemini (gemini-3.6-flash)...');
+          const result = await callGeminiSimplification(trimmedText, title, url);
           return res.json({
             success: true,
+            provider: 'gemini',
             isFallback: false,
-            simplifiedText: parsed.simplifiedText || trimmedText,
-            summary: parsed.summary || 'Summary unavailable.',
-            keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+            simplifiedText: result.simplifiedText || trimmedText,
+            summary: result.summary || 'Summary unavailable.',
+            keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints : []
+          });
+        } else if (provider === 'grok' && isGrokAvailable) {
+          console.log('✨ Invoking Fallback AI: xAI Grok (grok-2-latest)...');
+          const result = await callGrokSimplification(trimmedText, title, url);
+          return res.json({
+            success: true,
+            provider: 'grok',
+            isFallback: false,
+            simplifiedText: result.simplifiedText || trimmedText,
+            summary: result.summary || 'Summary unavailable.',
+            keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints : []
           });
         }
-      } catch (geminiError) {
-        console.error('Gemini API Simplification Error:', geminiError.message);
+      } catch (providerError) {
+        console.warn(`⚠️ Provider '${provider}' failed for simplification: ${providerError.message}. Trying next provider...`);
       }
     }
 
@@ -229,61 +418,40 @@ app.post('/api/translate', async (req, res) => {
       });
     }
 
-    const trimmedText = text.trim().substring(0, 6000); // Optimized payload size for sub-second AI latency
+    const trimmedText = text.trim().substring(0, 6000);
+    const providers = [PRIMARY_AI, FALLBACK_AI].filter((v, i, a) => a.indexOf(v) === i);
 
-    if (genAI) {
+    for (const provider of providers) {
       try {
-        const prompt = `
-You are an expert translator and cognitive accessibility assistant.
-Translate the following web article into ${targetLanguageName} (language code: ${targetLanguage}).
-
-${simplify ? `IMPORTANT REQUIREMENT: Simplify the translation using easy, clear, plain language in ${targetLanguageName} suitable for readers with dyslexia or low reading proficiency.` : 'Preserve the original facts, context, and meaning accurately.'}
-
-Title: ${title || 'Web Page'}
-Original Text:
-"""
-${trimmedText}
-"""
-
-Respond ONLY with a valid JSON object matching this exact schema:
-{
-  "translatedText": "Full translated article text in ${targetLanguageName}. Keep paragraph breaks.",
-  "summary": "A 2-3 sentence summary in ${targetLanguageName}.",
-  "keyPoints": [
-    "Key takeaway point 1 in ${targetLanguageName}",
-    "Key takeaway point 2 in ${targetLanguageName}",
-    "Key takeaway point 3 in ${targetLanguageName}"
-  ]
-}
-`;
-
-        const response = await genAI.models.generateContent({
-          model: 'gemini-3.6-flash',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            temperature: 0.2,
-            maxOutputTokens: 1000
-          }
-        });
-
-        const responseText = response.text;
-
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
+        if (provider === 'gemini' && genAI) {
+          console.log(`🌐 Invoking Primary AI: Google Gemini for ${targetLanguageName}...`);
+          const result = await callGeminiTranslation(trimmedText, title, targetLanguage, targetLanguageName, simplify);
           return res.json({
             success: true,
+            provider: 'gemini',
             isFallback: false,
             targetLanguage,
             targetLanguageName,
-            translatedText: parsed.translatedText || trimmedText,
-            summary: parsed.summary || `${targetLanguageName} Summary unavailable.`,
-            keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+            translatedText: result.translatedText || trimmedText,
+            summary: result.summary || `${targetLanguageName} Summary unavailable.`,
+            keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints : []
+          });
+        } else if (provider === 'grok' && isGrokAvailable) {
+          console.log(`🌐 Invoking Fallback AI: xAI Grok for ${targetLanguageName}...`);
+          const result = await callGrokTranslation(trimmedText, title, targetLanguage, targetLanguageName, simplify);
+          return res.json({
+            success: true,
+            provider: 'grok',
+            isFallback: false,
+            targetLanguage,
+            targetLanguageName,
+            translatedText: result.translatedText || trimmedText,
+            summary: result.summary || `${targetLanguageName} Summary unavailable.`,
+            keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints : []
           });
         }
-      } catch (geminiError) {
-        console.error('Gemini API Translation Error:', geminiError.message);
+      } catch (providerError) {
+        console.warn(`⚠️ Provider '${provider}' failed for translation: ${providerError.message}. Trying next provider...`);
       }
     }
 
