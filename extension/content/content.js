@@ -14,6 +14,7 @@
     fontFamily: 'default',
     lineSpacing: 1.6,
     letterSpacing: 0,
+    paragraphSpacing: 1.5,
     contrastMode: 'normal',
     readingSpeed: 1.0,
     focusMode: false,
@@ -28,7 +29,11 @@
   let ttsRate = 1.0;
 
   // Load initial settings on load
-  chrome.storage.sync.get(Object.keys(currentSettings), (stored) => {
+  chrome.storage.sync.get([
+    'fontSize', 'fontFamily', 'enableReadingFont', 'lineSpacing',
+    'letterSpacing', 'paragraphSpacing', 'contrastMode',
+    'readingSpeed', 'focusMode', 'dyslexiaMode'
+  ], (stored) => {
     if (stored) {
       currentSettings = { ...currentSettings, ...stored };
       applyAllSettings(currentSettings);
@@ -936,20 +941,84 @@
       document.head.appendChild(styleEl);
     }
 
-    const scale = (currentSettings.fontSize || 100) / 100;
+    const fontSize   = Math.max(80, Math.min(200, currentSettings.fontSize || 100));
     const lineHeight = currentSettings.lineSpacing || 1.6;
-    const letterSpacing = currentSettings.letterSpacing || 0;
+    const letterSpacing = currentSettings.letterSpacing !== undefined ? currentSettings.letterSpacing : 0;
     const paragraphSpacing = currentSettings.paragraphSpacing !== undefined ? currentSettings.paragraphSpacing : 1.5;
 
+    // Scale factor for font-size (relative to 100% baseline)
+    const scale = fontSize / 100;
+
     styleEl.textContent = `
-      /* Includify High-Priority Typography Overrides */
-      p, span, li, blockquote, article, main, h1, h2, h3, h4, h5, h6,
-      #includify-root p, #includify-root li {
-        font-size: calc(1em * ${scale}) !important;
+      /* ============================================================
+         Includify Typography Engine — High Specificity Overrides
+         Targets both host page content AND Includify overlays.
+         Uses html-level font scaling so all rem/em values cascade.
+         ============================================================ */
+
+      /* 1. Font Size — scale the root so rem units cascade correctly */
+      html:not(#\\9) body p,
+      html:not(#\\9) body li,
+      html:not(#\\9) body blockquote,
+      html:not(#\\9) body h1,
+      html:not(#\\9) body h2,
+      html:not(#\\9) body h3,
+      html:not(#\\9) body h4,
+      html:not(#\\9) body h5,
+      html:not(#\\9) body h6,
+      html:not(#\\9) body span:not([class]),
+      html:not(#\\9) body article,
+      html:not(#\\9) body main {
+        font-size: ${fontSize}% !important;
+      }
+
+      /* 2. Line Height — applied to all text containers */
+      html:not(#\\9) body p,
+      html:not(#\\9) body li,
+      html:not(#\\9) body blockquote,
+      html:not(#\\9) body h1,
+      html:not(#\\9) body h2,
+      html:not(#\\9) body h3,
+      html:not(#\\9) body h4,
+      html:not(#\\9) body h5,
+      html:not(#\\9) body h6 {
         line-height: ${lineHeight} !important;
+      }
+
+      /* 3. Letter Spacing */
+      html:not(#\\9) body p,
+      html:not(#\\9) body li,
+      html:not(#\\9) body h1,
+      html:not(#\\9) body h2,
+      html:not(#\\9) body h3,
+      html:not(#\\9) body h4,
+      html:not(#\\9) body h5,
+      html:not(#\\9) body h6,
+      html:not(#\\9) body blockquote {
         letter-spacing: ${letterSpacing}px !important;
       }
-      p, blockquote, #includify-root p {
+
+      /* 4. Paragraph Spacing */
+      html:not(#\\9) body p,
+      html:not(#\\9) body blockquote {
+        margin-bottom: ${paragraphSpacing}em !important;
+      }
+
+      /* 5. Focus Reader — override hardcoded content.css values */
+      #includify-focus-reader-root .includify-reader-paragraph {
+        font-size: ${fontSize}% !important;
+        line-height: ${lineHeight} !important;
+        letter-spacing: ${letterSpacing}px !important;
+        margin-bottom: ${paragraphSpacing}em !important;
+      }
+
+      /* 6. AI Reader Overlay — override hardcoded content.css values */
+      #includify-root .simplified-text-box p,
+      #includify-root .reader-body p,
+      #includify-root li {
+        font-size: ${fontSize}% !important;
+        line-height: ${lineHeight} !important;
+        letter-spacing: ${letterSpacing}px !important;
         margin-bottom: ${paragraphSpacing}em !important;
       }
     `;
