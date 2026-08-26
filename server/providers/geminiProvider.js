@@ -74,16 +74,17 @@ class GeminiProvider extends BaseAIProvider {
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
-You are an expert cognitive accessibility engine.
+You are an expert cognitive accessibility engine for Includify.
 
 TASK:
 Simplify the provided content for readers with reading and cognitive difficulties.
 
 REQUIREMENTS:
-- Use simpler vocabulary and shorter sentences.
-- Preserve original meaning, names, dates, numbers, facts, and technical terms accurately.
-- Do NOT invent facts or omit key information.
-- Do NOT translate into another language.
+1. "simplifiedText": Plain-language, easy-to-read version of the content using simpler vocabulary and shorter sentences.
+2. "summary": A concise 2-sentence summary of the main idea.
+3. "keyPoints": An array of 3 key takeaways.
+
+Preserve original meaning, names, dates, numbers, facts, and technical terms accurately. Do NOT invent facts.
 
 Webpage Title: ${title}
 Original Content:
@@ -93,9 +94,9 @@ ${trimmedText}
 
 Return ONLY a valid JSON object matching this exact schema:
 {
-  "resultText": "...",
+  "simplifiedText": "...",
   "summary": "...",
-  "keyPoints": ["...", "..."]
+  "keyPoints": ["...", "...", "..."]
 }
 `;
 
@@ -112,15 +113,15 @@ Return ONLY a valid JSON object matching this exact schema:
 
       const responseText = response.text;
       const parsed = parseAIJsonResponse(responseText, trimmedText);
-      const resultText = parsed.resultText || parsed.simplifiedText || trimmedText;
+      const simplifiedText = parsed.simplifiedText || parsed.resultText || trimmedText;
 
       return {
         operation: 'simplify',
         sourceLanguage: 'en',
-        resultText,
-        simplifiedText: resultText,
-        summary: parsed.summary || null,
-        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+        resultText: simplifiedText,
+        simplifiedText,
+        summary: parsed.summary || 'Summary unavailable.',
+        keyPoints: Array.isArray(parsed.keyPoints) && parsed.keyPoints.length > 0 ? parsed.keyPoints : ['Key point 1', 'Key point 2', 'Key point 3']
       };
     } catch (err) {
       throw this._parseGeminiError(err);
@@ -138,15 +139,15 @@ Return ONLY a valid JSON object matching this exact schema:
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
-You are a direct, highly accurate translator.
+You are an expert translator and cognitive accessibility assistant.
 Translate the following text into ${targetLanguageName} (language code: ${targetLanguage}).
 
 REQUIREMENTS:
-- Translate the COMPLETE provided text accurately into ${targetLanguageName}.
-- Preserve original meaning, facts, paragraph structure, names, numbers, dates, URLs, and technical terms.
-- Do NOT include conversational introductions like "Here is the translation", "Content translated to...", or preambles.
-- Do NOT summarize, simplify, or add explanations.
-- Do NOT return untranslated English text.
+1. "translatedText": Complete accurate translation of the text into ${targetLanguageName}.
+2. "summary": A concise 2-sentence summary of the content written in ${targetLanguageName}.
+3. "keyPoints": An array of 3 key takeaways written in ${targetLanguageName}.
+
+Do NOT include conversational preambles like "Here is the translation".
 
 Text to translate:
 """
@@ -155,7 +156,9 @@ ${trimmedText}
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {
-  "resultText": "..."
+  "translatedText": "...",
+  "summary": "...",
+  "keyPoints": ["...", "...", "..."]
 }
 `;
 
@@ -172,15 +175,17 @@ Respond ONLY with a valid JSON object matching this exact schema:
 
       const responseText = response.text;
       const parsed = parseAIJsonResponse(responseText, trimmedText);
-      const resultText = parsed.resultText || parsed.translatedText || trimmedText;
+      const translatedText = parsed.translatedText || parsed.resultText || trimmedText;
 
       return {
         operation: 'translate',
         sourceLanguage: 'en',
         targetLanguage,
         targetLanguageName,
-        resultText,
-        translatedText: resultText
+        resultText: translatedText,
+        translatedText,
+        summary: parsed.summary || `${targetLanguageName} summary unavailable.`,
+        keyPoints: Array.isArray(parsed.keyPoints) && parsed.keyPoints.length > 0 ? parsed.keyPoints : []
       };
     } catch (err) {
       throw this._parseGeminiError(err);
