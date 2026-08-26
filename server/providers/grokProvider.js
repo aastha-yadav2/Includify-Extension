@@ -18,7 +18,7 @@ class GrokProvider extends BaseAIProvider {
     }
 
     const { title = 'Web Content', url = 'Unknown' } = options;
-    const trimmedText = text.trim().substring(0, 2500);
+    const trimmedText = text.trim().substring(0, 2000);
 
     const prompt = `
 You are the AI accessibility engine for Includify.
@@ -60,7 +60,7 @@ Return ONLY a valid JSON object matching this exact schema:
     }
 
     const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
-    const trimmedText = text.trim().substring(0, 2500);
+    const trimmedText = text.trim().substring(0, 2000);
 
     const prompt = `
 You are an expert translator and cognitive accessibility assistant.
@@ -106,13 +106,8 @@ Respond ONLY with a valid JSON object matching this exact schema:
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
-          max_tokens: 1500
+          max_tokens: 1200
         };
-
-        // Only attach response_format for models that support it natively
-        if (isGroqKey && modelName.includes('gpt-oss')) {
-          bodyObj.response_format = { type: 'json_object' };
-        }
 
         const response = await fetch(endpoint, {
           method: 'POST',
