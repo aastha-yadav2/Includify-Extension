@@ -336,7 +336,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (res.ok) {
         const data = await res.json();
         backendStatusEl.classList.add('online');
-        backendStatusEl.querySelector('.status-text').textContent = data.geminiConfigured ? 'Gemini Ready' : 'Server Online';
+        const isAiReady = data.geminiConfigured || data.grokConfigured;
+        backendStatusEl.querySelector('.status-text').textContent = isAiReady ? 'AI Ready' : 'Server Online';
       } else {
         setOfflineStatus();
       }

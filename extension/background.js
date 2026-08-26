@@ -75,7 +75,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       body: JSON.stringify(request.payload)
     })
       .then(res => res.json())
-      .then(data => sendResponse({ success: true, data }))
+      .then(data => sendResponse({ success: data.success !== false, data }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true; // Keep channel open for async sendResponse
   }
@@ -87,7 +87,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       body: JSON.stringify(request.payload)
     })
       .then(res => res.json())
-      .then(data => sendResponse({ success: true, data }))
+      .then(data => sendResponse({ success: data.success !== false, data }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true; // Keep channel open for async sendResponse
   }
