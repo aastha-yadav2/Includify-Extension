@@ -31,21 +31,17 @@ class GeminiProvider extends BaseAIProvider {
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
-You are the AI accessibility engine for Includify.
+You are the AI cognitive accessibility engine for Includify.
 
 TASK:
-Simplify the provided webpage content for users with cognitive and reading difficulties.
+Simplify the provided content for users with cognitive and reading difficulties.
 
 RULES:
-- Preserve original meaning.
-- Do not invent facts.
-- Use short sentences.
-- Replace difficult vocabulary with simpler words.
-- Keep important names, numbers and facts unchanged.
+- Preserve original meaning, names, dates, numbers, and technical terms accurately.
+- Use shorter sentences and simpler vocabulary.
+- Do not invent facts or add unrelated information.
 
 Webpage Title: ${title}
-Webpage URL: ${url}
-
 Original Content:
 """
 ${trimmedText}
@@ -96,22 +92,23 @@ Return ONLY a valid JSON object matching this exact schema:
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
-You are an expert translator and cognitive accessibility assistant.
-Translate the following web article into ${targetLanguageName} (language code: ${targetLanguage}).
+You are a precise, direct translator.
+Translate the following text into ${targetLanguageName} (language code: ${targetLanguage}).
 
-${simplify ? `IMPORTANT REQUIREMENT: Simplify the translation using easy, clear, plain language in ${targetLanguageName} suitable for readers with dyslexia or low reading proficiency.` : 'Preserve the original facts, context, and meaning accurately.'}
+RULES:
+- Output ONLY the translated content into ${targetLanguageName}.
+- Do NOT include conversational introductions like "Here is the translation", "Content translated to...", or preambles.
+- Do NOT summarize or add explanations.
+- Preserve original meaning, facts, and structure accurately.
 
-Title: ${title}
-Original Text:
+Text to translate:
 """
 ${trimmedText}
 """
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {
-  "translatedText": "...",
-  "summary": "...",
-  "keyPoints": ["...", "..."]
+  "translatedText": "..."
 }
 `;
 
@@ -132,9 +129,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
 
       const parsed = JSON.parse(jsonMatch[0]);
       return {
-        translatedText: parsed.translatedText || trimmedText,
-        summary: parsed.summary || `${targetLanguageName} Summary unavailable.`,
-        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+        translatedText: parsed.translatedText || trimmedText
       };
     } catch (err) {
       throw this._parseGeminiError(err);

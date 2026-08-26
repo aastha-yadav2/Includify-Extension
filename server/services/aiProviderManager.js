@@ -1,5 +1,6 @@
 const GeminiProvider = require('../providers/geminiProvider');
 const GrokProvider = require('../providers/grokProvider');
+const crypto = require('crypto');
 
 class AIProviderManager {
   constructor() {
@@ -12,7 +13,37 @@ class AIProviderManager {
       grok: new GrokProvider(process.env.XAI_API_KEY)
     };
 
+    // In-memory cache for fast repeated requests (15-min TTL)
+    this.cache = new Map();
+    this.cacheTTLMs = 15 * 60 * 1000;
+
     console.log(`[AI Provider Manager] Hierarchy initialized: PRIMARY='${this.primaryName}' | FALLBACK='${this.fallbackName}'`);
+  }
+
+  _generateCacheKey(methodName, args) {
+    const textStr = args[0] || '';
+    const optsStr = JSON.stringify(args[1] || {});
+    const hash = crypto.createHash('md5').update(`${methodName}:${textStr}:${optsStr}`).digest('hex');
+    return hash;
+  }
+
+  _getFromCache(cacheKey) {
+    const entry = this.cache.get(cacheKey);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > this.cacheTTLMs) {
+      this.cache.delete(cacheKey);
+      return null;
+    }
+    console.log(`⚡ [AI Provider Manager] In-memory cache hit for key: ${cacheKey.substring(0, 8)}`);
+    return entry.data;
+  }
+
+  _setInCache(cacheKey, data) {
+    if (this.cache.size > 200) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(cacheKey, { timestamp: Date.now(), data });
   }
 
   /**
@@ -39,6 +70,13 @@ class AIProviderManager {
       return await this._handleSimulation(methodName, args, simulationMode);
     }
 
+    // Check cache
+    const cacheKey = this._generateCacheKey(methodName, args);
+    const cachedRes = this._getFromCache(cacheKey);
+    if (cachedRes) {
+      return { ...cachedRes, cached: true };
+    }
+
     const primaryProvider = this.providers[this.primaryName];
     const fallbackProvider = this.providers[this.fallbackName];
 
@@ -48,12 +86,14 @@ class AIProviderManager {
       try {
         const result = await primaryProvider[methodName](...args);
         console.log(`[AI Provider Manager] Primary provider '${this.primaryName}' succeeded.`);
-        return {
+        const finalRes = {
           success: true,
           provider: this.primaryName,
           fallbackUsed: false,
           ...result
         };
+        this._setInCache(cacheKey, finalRes);
+        return finalRes;
       } catch (primaryErr) {
         const status = primaryErr.status || 500;
         console.warn(`⚠️ [AI Provider Manager] Gemini API Key exhausted or failed [${status}]: ${primaryErr.message}`);
@@ -69,13 +109,15 @@ class AIProviderManager {
       try {
         const fallbackResult = await fallbackProvider[methodName](...args);
         console.log(`✅ [AI Provider Manager] Fallback provider '${this.fallbackName}' succeeded.`);
-        return {
+        const finalRes = {
           success: true,
           provider: this.fallbackName,
           fallbackUsed: true,
           fallbackNotice: 'AI provider switched automatically to maintain service.',
           ...fallbackResult
         };
+        this._setInCache(cacheKey, finalRes);
+        return finalRes;
       } catch (fallbackErr) {
         console.error(`❌ [AI Provider Manager] Fallback provider '${this.fallbackName}' also failed:`, fallbackErr.message);
       }
@@ -88,7 +130,7 @@ class AIProviderManager {
     return {
       success: false,
       aiUnavailable: true,
-      message: 'AI processing is temporarily unavailable. You can still use Includify\'s accessibility features.'
+      message: 'Unable to process this content right now. Please try again.'
     };
   }
 
@@ -134,7 +176,7 @@ class AIProviderManager {
       return {
         success: false,
         aiUnavailable: true,
-        message: 'AI processing is temporarily unavailable. You can still use Includify\'s accessibility features.'
+        message: 'Unable to process this content right now. Please try again.'
       };
     }
 

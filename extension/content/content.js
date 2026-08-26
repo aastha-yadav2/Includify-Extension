@@ -359,12 +359,12 @@
     root.id = 'includify-root';
     root.innerHTML = `
       <div class="reader-header">
-        <h2>✨ Includify AI Reader</h2>
+        <h2>✨ Simplified Content</h2>
         <button class="btn-close" id="includify-close-btn" aria-label="Close">✕</button>
       </div>
       <div class="reader-body">
         <div class="loading-spinner">
-          <p>⚡ Extracting text & simplifying via Includify AI...</p>
+          <p>Simplifying...</p>
         </div>
       </div>
     `;
@@ -382,28 +382,30 @@
     if (data.aiUnavailable || data.success === false) {
       root.innerHTML = `
         <div class="reader-header">
-          <h2>✨ Includify Reader View</h2>
-          <button class="btn-close" id="includify-close-btn" aria-label="Close Reader Overlay">✕</button>
+          <h2>✨ Simplified Content</h2>
+          <button class="btn-close" id="includify-close-btn" aria-label="Close Overlay">✕</button>
         </div>
         <div class="reader-body">
-          <div class="summary-box" style="background:#fffbe6; border-color:#ffe58f;">
-            <h3 style="color:#d48806;">⚠️ AI Unavailable</h3>
-            <p style="color:#8c6b00;">${escapeHtml(data.message || 'AI processing is temporarily unavailable. You can still use Includify accessibility features.')}</p>
+          <div class="summary-box" style="background:#fef2f2; border-left:4px solid #ef4444;">
+            <h3 style="color:#b91c1c;">Notice</h3>
+            <p style="color:#991b1b;">Unable to process this content right now. Please try again.</p>
           </div>
           <div class="simplified-text-box">
-            <h3>📖 Page Content</h3>
+            <h3>Page Content</h3>
             <div id="includify-text-container">
               <p>${escapeHtml(extracted.text)}</p>
             </div>
           </div>
         </div>
         <div class="reader-footer">
+          <button class="btn-reader-action" id="includify-retry-btn" style="background:#ef4444;">🔄 Retry</button>
           <button class="btn-reader-action" id="includify-read-btn">🔊 Read Aloud</button>
         </div>
       `;
 
       document.body.appendChild(root);
       document.getElementById('includify-close-btn').addEventListener('click', removeOverlay);
+      document.getElementById('includify-retry-btn').addEventListener('click', handleSimplifyAction);
       document.getElementById('includify-read-btn').addEventListener('click', () => {
         playTTS(extracted.text);
       });
@@ -419,26 +421,19 @@
       .map(p => `<p>${escapeHtml(p)}</p>`)
       .join('');
 
-    const fallbackNoticeBanner = data.fallbackUsed ? `
-      <div class="fallback-banner" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-        <span>⚡ AI provider switched automatically to maintain service.</span>
-      </div>
-    ` : '';
-
     root.innerHTML = `
       <div class="reader-header">
-        <h2>✨ Includify AI Reader</h2>
-        <button class="btn-close" id="includify-close-btn" aria-label="Close Reader Overlay">✕</button>
+        <h2>✨ Simplified Content</h2>
+        <button class="btn-close" id="includify-close-btn" aria-label="Close Overlay">✕</button>
       </div>
 
       <div class="reader-body">
-        ${fallbackNoticeBanner}
-
         <!-- Summary Section -->
+        ${data.summary ? `
         <div class="summary-box">
           <h3>📌 Key Summary</h3>
-          <p>${escapeHtml(data.summary || 'Summary unavailable.')}</p>
-        </div>
+          <p>${escapeHtml(data.summary)}</p>
+        </div>` : ''}
 
         <!-- Key Takeaways -->
         ${keyPointsHtml ? `
@@ -449,7 +444,7 @@
 
         <!-- Simplified Article Body -->
         <div class="simplified-text-box">
-          <h3>📖 Simplified Text</h3>
+          <h3>Simplified Content</h3>
           <div id="includify-text-container">
             ${paragraphsHtml}
           </div>
@@ -559,12 +554,12 @@
     root.id = 'includify-root';
     root.innerHTML = `
       <div class="reader-header">
-        <h2>🌐 Includify ${langName} Translator</h2>
+        <h2>🌐 ${escapeHtml(langName)} Translation</h2>
         <button class="btn-close" id="includify-close-btn" aria-label="Close">✕</button>
       </div>
       <div class="reader-body">
         <div class="loading-spinner">
-          <p>⚡ Translating content into ${langName} via Includify AI...</p>
+          <p>Translating...</p>
         </div>
       </div>
     `;
@@ -578,38 +573,43 @@
     const root = document.createElement('div');
     root.id = 'includify-root';
 
+    const langName = data.targetLanguageName || 'Translation';
+
     if (data.aiUnavailable || data.success === false) {
       root.innerHTML = `
         <div class="reader-header">
-          <h2>🌐 Includify Reader View</h2>
-          <button class="btn-close" id="includify-close-btn" aria-label="Close Reader Overlay">✕</button>
+          <h2>🌐 ${escapeHtml(langName)} Translation</h2>
+          <button class="btn-close" id="includify-close-btn" aria-label="Close Overlay">✕</button>
         </div>
         <div class="reader-body">
-          <div class="summary-box" style="background:#fffbe6; border-color:#ffe58f;">
-            <h3 style="color:#d48806;">⚠️ AI Unavailable</h3>
-            <p style="color:#8c6b00;">${escapeHtml(data.message || 'AI processing is temporarily unavailable. You can still use Includify accessibility features.')}</p>
+          <div class="summary-box" style="background:#fef2f2; border-left:4px solid #ef4444;">
+            <h3 style="color:#b91c1c;">Notice</h3>
+            <p style="color:#991b1b;">Unable to process this content right now. Please try again.</p>
           </div>
           <div class="simplified-text-box">
-            <h3>📖 Page Content</h3>
+            <h3>Page Content</h3>
             <div id="includify-text-container">
               <p>${escapeHtml(extracted.text)}</p>
             </div>
           </div>
         </div>
         <div class="reader-footer">
+          <button class="btn-reader-action" id="includify-retry-btn" style="background:#ef4444;">🔄 Retry</button>
           <button class="btn-reader-action" id="includify-read-btn">🔊 Read Aloud</button>
         </div>
       `;
 
       document.body.appendChild(root);
       document.getElementById('includify-close-btn').addEventListener('click', removeOverlay);
+      document.getElementById('includify-retry-btn').addEventListener('click', () => {
+        handleTranslateAction(data.targetLanguage || 'hi', langName, false);
+      });
       document.getElementById('includify-read-btn').addEventListener('click', () => {
         playTTS(extracted.text);
       });
       return;
     }
 
-    const langName = data.targetLanguageName || 'Translation';
     const keyPointsHtml = (data.keyPoints || []).map(pt => `<li>${escapeHtml(pt)}</li>`).join('');
 
     const paragraphsHtml = (data.translatedText || '')
@@ -618,28 +618,21 @@
       .map(p => `<p>${escapeHtml(p)}</p>`)
       .join('');
 
-    const fallbackNoticeBanner = data.fallbackUsed ? `
-      <div class="fallback-banner" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
-        <span>⚡ AI provider switched automatically to maintain service.</span>
-      </div>
-    ` : '';
-
     root.innerHTML = `
       <div class="reader-header">
-        <h2>🌐 Includify ${escapeHtml(langName)} Reader</h2>
-        <button class="btn-close" id="includify-close-btn" aria-label="Close Reader Overlay">✕</button>
+        <h2>🌐 ${escapeHtml(langName)} Translation</h2>
+        <button class="btn-close" id="includify-close-btn" aria-label="Close Overlay">✕</button>
       </div>
 
       <div class="reader-body">
-        ${fallbackNoticeBanner}
-
-        <!-- Summary Section -->
+        <!-- Summary Section (Only if present) -->
+        ${data.summary ? `
         <div class="summary-box" style="background:#f0fdf4; border-left-color:#22c55e;">
           <h3 style="color:#15803d;">📌 Summary (${escapeHtml(langName)})</h3>
-          <p style="color:#14532d;">${escapeHtml(data.summary || 'Summary unavailable.')}</p>
-        </div>
+          <p style="color:#14532d;">${escapeHtml(data.summary)}</p>
+        </div>` : ''}
 
-        <!-- Key Takeaways -->
+        <!-- Key Takeaways (Only if present) -->
         ${keyPointsHtml ? `
         <div class="key-points-box">
           <h3>💡 Key Points (${escapeHtml(langName)})</h3>
@@ -648,7 +641,7 @@
 
         <!-- Translated Article Body -->
         <div class="simplified-text-box">
-          <h3>📖 Translated Content (${escapeHtml(langName)})</h3>
+          <h3>${escapeHtml(langName)} Translation</h3>
           <div id="includify-text-container">
             ${paragraphsHtml}
           </div>

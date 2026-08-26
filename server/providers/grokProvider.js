@@ -18,7 +18,7 @@ class GrokProvider extends BaseAIProvider {
     }
 
     const { title = 'Web Content', url = 'Unknown' } = options;
-    const trimmedText = text.trim().substring(0, 2000);
+    const trimmedText = text.trim().substring(0, 2500);
 
     const prompt = `
 You are the AI accessibility engine for Includify.
@@ -27,15 +27,11 @@ TASK:
 Simplify the provided webpage content for users with cognitive and reading difficulties.
 
 RULES:
-- Preserve original meaning accurately.
-- Do not invent facts.
-- Use short sentences.
-- Replace difficult vocabulary with simpler words.
-- Keep important names, numbers and facts unchanged.
+- Preserve original meaning, names, dates, numbers, and technical terms accurately.
+- Use shorter sentences and simpler vocabulary.
+- Do not invent facts or add unrelated information.
 
 Webpage Title: ${title}
-Webpage URL: ${url}
-
 Original Content:
 """
 ${trimmedText}
@@ -60,25 +56,26 @@ Return ONLY a valid JSON object matching this exact schema:
     }
 
     const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
-    const trimmedText = text.trim().substring(0, 2000);
+    const trimmedText = text.trim().substring(0, 2500);
 
     const prompt = `
-You are an expert translator and cognitive accessibility assistant.
-Translate the following web article into ${targetLanguageName} (language code: ${targetLanguage}).
+You are a precise, direct translator.
+Translate the following text into ${targetLanguageName} (language code: ${targetLanguage}).
 
-${simplify ? `IMPORTANT REQUIREMENT: Simplify the translation using easy, clear, plain language in ${targetLanguageName}.` : 'Preserve original facts, context, and meaning accurately.'}
+RULES:
+- Output ONLY the translated content into ${targetLanguageName}.
+- Do NOT include conversational introductions like "Here is the translation", "Content translated to...", or preambles.
+- Do NOT summarize or add explanations.
+- Preserve original meaning, facts, and structure accurately.
 
-Title: ${title}
-Original Text:
+Text to translate:
 """
 ${trimmedText}
 """
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {
-  "translatedText": "...",
-  "summary": "...",
-  "keyPoints": ["...", "..."]
+  "translatedText": "..."
 }
 `;
 
@@ -102,7 +99,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
         const bodyObj = {
           model: modelName,
           messages: [
-            { role: 'system', content: 'You are an AI accessibility assistant that responds strictly in valid JSON format.' },
+            { role: 'system', content: 'You are a precise translation and accessibility engine. Respond ONLY in valid JSON format.' },
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
@@ -123,7 +120,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
           console.warn(`[GrokProvider] Model '${modelName}' returned status ${response.status}: ${errText.substring(0, 150)}`);
           lastError = new Error(`HTTP ${response.status}: ${errText}`);
           lastError.status = response.status;
-          continue; // Try next candidate model
+          continue;
         }
 
         const data = await response.json();
