@@ -21,15 +21,16 @@ class GrokProvider extends BaseAIProvider {
     const trimmedText = text.trim().substring(0, 2500);
 
     const prompt = `
-You are the AI accessibility engine for Includify.
+You are an expert cognitive accessibility engine.
 
 TASK:
-Simplify the provided webpage content for users with cognitive and reading difficulties.
+Simplify the provided content for readers with reading and cognitive difficulties.
 
-RULES:
-- Preserve original meaning, names, dates, numbers, and technical terms accurately.
-- Use shorter sentences and simpler vocabulary.
-- Do not invent facts or add unrelated information.
+REQUIREMENTS:
+- Use simpler vocabulary and shorter sentences.
+- Preserve original meaning, names, dates, numbers, facts, and technical terms accurately.
+- Do NOT invent facts or omit key information.
+- Do NOT translate into another language.
 
 Webpage Title: ${title}
 Original Content:
@@ -39,13 +40,23 @@ ${trimmedText}
 
 Return ONLY a valid JSON object matching this exact schema:
 {
-  "simplifiedText": "...",
+  "resultText": "...",
   "summary": "...",
   "keyPoints": ["...", "..."]
 }
 `;
 
-    return await this._callAIAPI(prompt, trimmedText);
+    const res = await this._callAIAPI(prompt, trimmedText);
+    const resultText = res.resultText || res.simplifiedText || trimmedText;
+
+    return {
+      operation: 'simplify',
+      sourceLanguage: 'en',
+      resultText,
+      simplifiedText: resultText,
+      summary: res.summary || null,
+      keyPoints: Array.isArray(res.keyPoints) ? res.keyPoints : []
+    };
   }
 
   async translateText(text, targetLanguage = 'hi', options = {}) {
@@ -55,18 +66,19 @@ Return ONLY a valid JSON object matching this exact schema:
       throw err;
     }
 
-    const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
+    const { targetLanguageName = 'Hindi', title = 'Web Content' } = options;
     const trimmedText = text.trim().substring(0, 2500);
 
     const prompt = `
-You are a precise, direct translator.
+You are a direct, highly accurate translator.
 Translate the following text into ${targetLanguageName} (language code: ${targetLanguage}).
 
-RULES:
-- Output ONLY the translated content into ${targetLanguageName}.
+REQUIREMENTS:
+- Translate the COMPLETE provided text accurately into ${targetLanguageName}.
+- Preserve original meaning, facts, paragraph structure, names, numbers, dates, URLs, and technical terms.
 - Do NOT include conversational introductions like "Here is the translation", "Content translated to...", or preambles.
-- Do NOT summarize or add explanations.
-- Preserve original meaning, facts, and structure accurately.
+- Do NOT summarize, simplify, or add explanations.
+- Do NOT return untranslated English text.
 
 Text to translate:
 """
@@ -75,11 +87,21 @@ ${trimmedText}
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {
-  "translatedText": "..."
+  "resultText": "..."
 }
 `;
 
-    return await this._callAIAPI(prompt, trimmedText);
+    const res = await this._callAIAPI(prompt, trimmedText);
+    const resultText = res.resultText || res.translatedText || trimmedText;
+
+    return {
+      operation: 'translate',
+      sourceLanguage: 'en',
+      targetLanguage,
+      targetLanguageName,
+      resultText,
+      translatedText: resultText
+    };
   }
 
   async _callAIAPI(userPrompt, fallbackText) {
@@ -103,7 +125,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
-          max_tokens: 1200
+          max_tokens: 1500
         };
 
         const response = await fetch(endpoint, {
@@ -127,18 +149,11 @@ Respond ONLY with a valid JSON object matching this exact schema:
         const contentStr = data.choices?.[0]?.message?.content;
         if (!contentStr) throw new Error('Response body message content was empty');
 
-        // Extract JSON string cleanly via regex match
         const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error('Failed to locate JSON object in model response');
 
         const parsed = JSON.parse(jsonMatch[0]);
-
-        return {
-          simplifiedText: parsed.simplifiedText || parsed.translatedText || fallbackText,
-          translatedText: parsed.translatedText || parsed.simplifiedText || fallbackText,
-          summary: parsed.summary || 'Summary unavailable.',
-          keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
-        };
+        return parsed;
       } catch (modelErr) {
         lastError = modelErr;
         console.warn(`[GrokProvider] Error executing model '${modelName}': ${modelErr.message}`);

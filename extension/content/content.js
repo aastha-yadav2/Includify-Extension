@@ -335,17 +335,8 @@
       }
     }, (res) => {
       if (chrome.runtime.lastError || !res || !res.success) {
-        console.warn('Backend API connection warning, generating local fallback:', chrome.runtime.lastError?.message || res?.error);
-        const fallbackData = {
-          simplifiedText: extracted.text,
-          summary: "Includify extracted main content directly from the webpage.",
-          keyPoints: [
-            `Title: ${extracted.title}`,
-            `Extracted length: ${extracted.text.length} characters`,
-            `Host: ${window.location.hostname}`
-          ]
-        };
-        renderSimplificationOverlay(fallbackData, extracted);
+        console.warn('Backend API error:', chrome.runtime.lastError?.message || res?.error || res?.message);
+        renderSimplificationOverlay({ success: false, aiUnavailable: true }, extracted);
       } else {
         renderSimplificationOverlay(res.data, extracted);
       }
@@ -524,16 +515,8 @@
       }
     }, (res) => {
       if (chrome.runtime.lastError || !res || !res.success) {
-        console.warn('Backend Translation API warning:', chrome.runtime.lastError?.message || res?.error);
-        const fallbackData = {
-          translatedText: `[${targetLangName} Translation Preview]\n\n${extracted.text}`,
-          summary: `Extracted content for ${targetLangName} translation.`,
-          keyPoints: [`Target Language: ${targetLangName}`, `Host: ${window.location.hostname}`],
-          targetLanguage: targetLang,
-          targetLanguageName: targetLangName
-        };
-        activeTranslationData = { ...fallbackData, targetLang, targetLangName };
-        renderTranslationOverlay(fallbackData, extracted);
+        console.warn('Backend Translation API error:', chrome.runtime.lastError?.message || res?.error || res?.message);
+        renderTranslationOverlay({ success: false, aiUnavailable: true, targetLanguage: targetLang, targetLanguageName: targetLangName }, extracted);
       } else {
         const data = res.data;
         activeTranslationData = { ...data, targetLang, targetLangName };

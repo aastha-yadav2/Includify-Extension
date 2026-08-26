@@ -31,15 +31,16 @@ class GeminiProvider extends BaseAIProvider {
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
-You are the AI cognitive accessibility engine for Includify.
+You are an expert cognitive accessibility engine.
 
 TASK:
-Simplify the provided content for users with cognitive and reading difficulties.
+Simplify the provided content for readers with reading and cognitive difficulties.
 
-RULES:
-- Preserve original meaning, names, dates, numbers, and technical terms accurately.
-- Use shorter sentences and simpler vocabulary.
-- Do not invent facts or add unrelated information.
+REQUIREMENTS:
+- Use simpler vocabulary and shorter sentences.
+- Preserve original meaning, names, dates, numbers, facts, and technical terms accurately.
+- Do NOT invent facts or omit key information.
+- Do NOT translate into another language.
 
 Webpage Title: ${title}
 Original Content:
@@ -49,7 +50,7 @@ ${trimmedText}
 
 Return ONLY a valid JSON object matching this exact schema:
 {
-  "simplifiedText": "...",
+  "resultText": "...",
   "summary": "...",
   "keyPoints": ["...", "..."]
 }
@@ -71,9 +72,14 @@ Return ONLY a valid JSON object matching this exact schema:
       if (!jsonMatch) throw new Error('Gemini response returned invalid JSON structure');
 
       const parsed = JSON.parse(jsonMatch[0]);
+      const resultText = parsed.resultText || parsed.simplifiedText || trimmedText;
+
       return {
-        simplifiedText: parsed.simplifiedText || trimmedText,
-        summary: parsed.summary || 'Summary unavailable.',
+        operation: 'simplify',
+        sourceLanguage: 'en',
+        resultText,
+        simplifiedText: resultText,
+        summary: parsed.summary || null,
         keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
       };
     } catch (err) {
@@ -88,18 +94,19 @@ Return ONLY a valid JSON object matching this exact schema:
       throw err;
     }
 
-    const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
+    const { targetLanguageName = 'Hindi', title = 'Web Content' } = options;
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
-You are a precise, direct translator.
+You are a direct, highly accurate translator.
 Translate the following text into ${targetLanguageName} (language code: ${targetLanguage}).
 
-RULES:
-- Output ONLY the translated content into ${targetLanguageName}.
+REQUIREMENTS:
+- Translate the COMPLETE provided text accurately into ${targetLanguageName}.
+- Preserve original meaning, facts, paragraph structure, names, numbers, dates, URLs, and technical terms.
 - Do NOT include conversational introductions like "Here is the translation", "Content translated to...", or preambles.
-- Do NOT summarize or add explanations.
-- Preserve original meaning, facts, and structure accurately.
+- Do NOT summarize, simplify, or add explanations.
+- Do NOT return untranslated English text.
 
 Text to translate:
 """
@@ -108,7 +115,7 @@ ${trimmedText}
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {
-  "translatedText": "..."
+  "resultText": "..."
 }
 `;
 
@@ -128,8 +135,15 @@ Respond ONLY with a valid JSON object matching this exact schema:
       if (!jsonMatch) throw new Error('Gemini response returned invalid JSON structure');
 
       const parsed = JSON.parse(jsonMatch[0]);
+      const resultText = parsed.resultText || parsed.translatedText || trimmedText;
+
       return {
-        translatedText: parsed.translatedText || trimmedText
+        operation: 'translate',
+        sourceLanguage: 'en',
+        targetLanguage,
+        targetLanguageName,
+        resultText,
+        translatedText: resultText
       };
     } catch (err) {
       throw this._parseGeminiError(err);
