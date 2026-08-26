@@ -578,6 +578,37 @@
     const root = document.createElement('div');
     root.id = 'includify-root';
 
+    if (data.aiUnavailable || data.success === false) {
+      root.innerHTML = `
+        <div class="reader-header">
+          <h2>🌐 Includify Reader View</h2>
+          <button class="btn-close" id="includify-close-btn" aria-label="Close Reader Overlay">✕</button>
+        </div>
+        <div class="reader-body">
+          <div class="summary-box" style="background:#fffbe6; border-color:#ffe58f;">
+            <h3 style="color:#d48806;">⚠️ AI Unavailable</h3>
+            <p style="color:#8c6b00;">${escapeHtml(data.message || 'AI processing is temporarily unavailable. You can still use Includify accessibility features.')}</p>
+          </div>
+          <div class="simplified-text-box">
+            <h3>📖 Page Content</h3>
+            <div id="includify-text-container">
+              <p>${escapeHtml(extracted.text)}</p>
+            </div>
+          </div>
+        </div>
+        <div class="reader-footer">
+          <button class="btn-reader-action" id="includify-read-btn">🔊 Read Aloud</button>
+        </div>
+      `;
+
+      document.body.appendChild(root);
+      document.getElementById('includify-close-btn').addEventListener('click', removeOverlay);
+      document.getElementById('includify-read-btn').addEventListener('click', () => {
+        playTTS(extracted.text);
+      });
+      return;
+    }
+
     const langName = data.targetLanguageName || 'Translation';
     const keyPointsHtml = (data.keyPoints || []).map(pt => `<li>${escapeHtml(pt)}</li>`).join('');
 
@@ -587,6 +618,12 @@
       .map(p => `<p>${escapeHtml(p)}</p>`)
       .join('');
 
+    const fallbackNoticeBanner = data.fallbackUsed ? `
+      <div class="fallback-banner" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+        <span>⚡ AI provider switched automatically to maintain service.</span>
+      </div>
+    ` : '';
+
     root.innerHTML = `
       <div class="reader-header">
         <h2>🌐 Includify ${escapeHtml(langName)} Reader</h2>
@@ -594,6 +631,8 @@
       </div>
 
       <div class="reader-body">
+        ${fallbackNoticeBanner}
+
         <!-- Summary Section -->
         <div class="summary-box" style="background:#f0fdf4; border-left-color:#22c55e;">
           <h3 style="color:#15803d;">📌 Summary (${escapeHtml(langName)})</h3>
