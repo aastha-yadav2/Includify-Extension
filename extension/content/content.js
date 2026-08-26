@@ -364,7 +364,7 @@
       </div>
       <div class="reader-body">
         <div class="loading-spinner">
-          <p>⚡ Extracting text & calling Gemini AI...</p>
+          <p>⚡ Extracting text & simplifying via Includify AI...</p>
         </div>
       </div>
     `;
@@ -564,7 +564,7 @@
       </div>
       <div class="reader-body">
         <div class="loading-spinner">
-          <p>⚡ Translating content into ${langName} via Gemini AI...</p>
+          <p>⚡ Translating content into ${langName} via Includify AI...</p>
         </div>
       </div>
     `;
