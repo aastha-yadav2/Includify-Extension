@@ -18,7 +18,7 @@ class GrokProvider extends BaseAIProvider {
     }
 
     const { title = 'Web Content', url = 'Unknown' } = options;
-    const trimmedText = text.trim().substring(0, 3000);
+    const trimmedText = text.trim().substring(0, 2500);
 
     const prompt = `
 You are the AI accessibility engine for Includify.
@@ -60,7 +60,7 @@ Return ONLY a valid JSON object matching this exact schema:
     }
 
     const { targetLanguageName = 'Hindi', title = 'Web Content', simplify = false } = options;
-    const trimmedText = text.trim().substring(0, 3000);
+    const trimmedText = text.trim().substring(0, 2500);
 
     const prompt = `
 You are an expert translator and cognitive accessibility assistant.
@@ -91,54 +91,72 @@ Respond ONLY with a valid JSON object matching this exact schema:
       ? 'https://api.groq.com/openai/v1/chat/completions' 
       : 'https://api.x.ai/v1/chat/completions';
     
-    const modelName = isGroqKey ? 'openai/gpt-oss-120b' : 'grok-2-latest';
+    const candidateModels = isGroqKey 
+      ? ['openai/gpt-oss-120b', 'groq/compound', 'openai/gpt-oss-20b'] 
+      : ['grok-2-latest', 'grok-beta'];
 
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+    let lastError = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const bodyObj = {
           model: modelName,
           messages: [
-            { role: 'system', content: 'You are an AI accessibility assistant that responds strictly in valid JSON.' },
+            { role: 'system', content: 'You are an AI accessibility assistant that responds strictly in valid JSON format.' },
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.1,
-          max_tokens: 2048,
-          response_format: { type: 'json_object' }
-        })
-      });
+          max_tokens: 1500
+        };
 
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        const err = new Error(`Fallback AI API returned HTTP status ${response.status}: ${errText}`);
-        err.status = response.status;
-        throw err;
+        // Only attach response_format for models that support it natively
+        if (isGroqKey && modelName.includes('gpt-oss')) {
+          bodyObj.response_format = { type: 'json_object' };
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bodyObj)
+        });
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => '');
+          console.warn(`[GrokProvider] Model '${modelName}' returned status ${response.status}: ${errText.substring(0, 150)}`);
+          lastError = new Error(`HTTP ${response.status}: ${errText}`);
+          lastError.status = response.status;
+          continue; // Try next candidate model
+        }
+
+        const data = await response.json();
+        const contentStr = data.choices?.[0]?.message?.content;
+        if (!contentStr) throw new Error('Response body message content was empty');
+
+        // Extract JSON string cleanly via regex match
+        const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('Failed to locate JSON object in model response');
+
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        return {
+          simplifiedText: parsed.simplifiedText || parsed.translatedText || fallbackText,
+          translatedText: parsed.translatedText || parsed.simplifiedText || fallbackText,
+          summary: parsed.summary || 'Summary unavailable.',
+          keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
+        };
+      } catch (modelErr) {
+        lastError = modelErr;
+        console.warn(`[GrokProvider] Error executing model '${modelName}': ${modelErr.message}`);
       }
-
-      const data = await response.json();
-      const contentStr = data.choices?.[0]?.message?.content;
-      if (!contentStr) throw new Error('Fallback AI response body was empty');
-
-      // Clean JSON string
-      const jsonMatch = contentStr.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : contentStr);
-
-      return {
-        simplifiedText: parsed.simplifiedText || parsed.translatedText || fallbackText,
-        translatedText: parsed.translatedText || parsed.simplifiedText || fallbackText,
-        summary: parsed.summary || 'Summary unavailable.',
-        keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints : []
-      };
-    } catch (err) {
-      let status = err.status || 500;
-      const parsedErr = new Error(`Fallback Provider Error [${status}]: ${err.message}`);
-      parsedErr.status = status;
-      throw parsedErr;
     }
+
+    let status = lastError?.status || 500;
+    const parsedErr = new Error(`Grok Provider Error [${status}]: ${lastError?.message || 'All models failed'}`);
+    parsedErr.status = status;
+    throw parsedErr;
   }
 }
 
