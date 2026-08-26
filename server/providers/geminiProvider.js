@@ -1,6 +1,49 @@
 const BaseAIProvider = require('./baseProvider');
 const { GoogleGenAI } = require('@google/genai');
 
+function parseAIJsonResponse(contentStr, fallbackText = '') {
+  if (!contentStr || typeof contentStr !== 'string') {
+    return { resultText: fallbackText };
+  }
+
+  // 1. Remove markdown code block markers
+  let cleaned = contentStr.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+  // 2. Try direct JSON parse
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed && typeof parsed === 'object') {
+      return parsed;
+    }
+  } catch (e1) {
+    // 3. Try regex extraction of JSON object {...}
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed && typeof parsed === 'object') return parsed;
+      } catch (e2) {
+        // Fix unescaped control characters in JSON string
+        try {
+          const sanitized = jsonMatch[0].replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+          const parsed = JSON.parse(sanitized);
+          if (parsed && typeof parsed === 'object') return parsed;
+        } catch (e3) {}
+      }
+    }
+  }
+
+  // 4. Regex extraction for resultText, simplifiedText, or translatedText
+  const resultMatch = cleaned.match(/"(?:resultText|simplifiedText|translatedText)"\s*:\s*"([\s\S]*?)"\s*[,\}]/i);
+  if (resultMatch && resultMatch[1]) {
+    return { resultText: resultMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+  }
+
+  // 5. If response is plain text (not JSON), use it directly as resultText!
+  const plainText = cleaned.replace(/[\{\}\"]/g, '').trim();
+  return { resultText: plainText || fallbackText };
+}
+
 class GeminiProvider extends BaseAIProvider {
   constructor(apiKey) {
     super('gemini');
@@ -27,7 +70,7 @@ class GeminiProvider extends BaseAIProvider {
       throw err;
     }
 
-    const { title = 'Web Content', url = 'Unknown' } = options;
+    const { title = 'Web Content' } = options;
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
@@ -68,10 +111,7 @@ Return ONLY a valid JSON object matching this exact schema:
       });
 
       const responseText = response.text;
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Gemini response returned invalid JSON structure');
-
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = parseAIJsonResponse(responseText, trimmedText);
       const resultText = parsed.resultText || parsed.simplifiedText || trimmedText;
 
       return {
@@ -94,7 +134,7 @@ Return ONLY a valid JSON object matching this exact schema:
       throw err;
     }
 
-    const { targetLanguageName = 'Hindi', title = 'Web Content' } = options;
+    const { targetLanguageName = 'Hindi' } = options;
     const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
@@ -131,10 +171,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
       });
 
       const responseText = response.text;
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Gemini response returned invalid JSON structure');
-
-      const parsed = JSON.parse(jsonMatch[0]);
+      const parsed = parseAIJsonResponse(responseText, trimmedText);
       const resultText = parsed.resultText || parsed.translatedText || trimmedText;
 
       return {
@@ -167,7 +204,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
       status = 503;
     } else if (msg.includes('504') || msg.includes('deadline')) {
       status = 504;
-    } else if (msg.includes('401') || msg.includes('api_key') || msg.includes('unauthenticated')) {
+    } else if (msg.includes('401') || msg.includes('api_key') || msg.includes('unauthenticated') || msg.includes('bad request')) {
       status = 401;
     } else if (msg.includes('403') || msg.includes('permission_denied')) {
       status = 403;
