@@ -5,15 +5,17 @@
 // Default Accessibility Settings
 const DEFAULT_SETTINGS = {
   fontSize: 100, // percentage
-  fontFamily: 'default', // 'default' or 'opendyslexic'
+  fontFamily: 'default',
+  enableReadingFont: true,
   lineSpacing: 1.6,
   letterSpacing: 0, // px
-  contrastMode: 'normal', // 'normal', 'dark', 'high-contrast', 'sepia', 'blue-tint'
+  contrastMode: 'normal',
   readingSpeed: 1.0,
   focusMode: false,
   dyslexiaMode: false,
   backendUrl: 'http://localhost:3000'
 };
+
 
 // Initialize settings on installation
 chrome.runtime.onInstalled.addListener((details) => {

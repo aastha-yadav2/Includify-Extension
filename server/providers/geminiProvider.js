@@ -173,7 +173,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
   }
 
   async _generateWithFallback(prompt) {
-    const candidateModels = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    const candidateModels = ['gemini-3.6-flash', 'gemini-2.0-flash'];
     let lastErr = null;
 
     for (const modelName of candidateModels) {
@@ -191,11 +191,18 @@ Respond ONLY with a valid JSON object matching this exact schema:
       } catch (err) {
         lastErr = err;
         console.warn(`[GeminiProvider] Model '${modelName}' failed: ${err.message}`);
+        
+        // If quota exhausted or rate limited, throw immediately to trigger fast fallback
+        const msg = (err.message || '').toLowerCase();
+        if (msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('quota') || msg.includes('rate limit')) {
+          break;
+        }
       }
     }
 
     throw lastErr || new Error('All Gemini candidate models failed');
   }
+
 
   _parseGeminiError(err) {
     const msg = (err.message || err.toString() || '').toLowerCase();

@@ -334,13 +334,14 @@
         url: extracted.url
       }
     }, (res) => {
-      if (chrome.runtime.lastError || !res || !res.success) {
-        console.warn('Backend API error:', chrome.runtime.lastError?.message || res?.error || res?.message);
-        renderSimplificationOverlay({ success: false, aiUnavailable: true }, extracted);
+      if (chrome.runtime.lastError || !res) {
+        console.warn('Backend API error:', chrome.runtime.lastError?.message || 'No response');
+        renderSimplificationOverlay({ success: false, aiUnavailable: true, message: 'Backend server offline or unreachable.' }, extracted);
       } else {
-        renderSimplificationOverlay(res.data, extracted);
+        renderSimplificationOverlay(res.data || { success: false, aiUnavailable: true }, extracted);
       }
     });
+
   }
 
   function showOverlayLoading() {
@@ -514,11 +515,11 @@
         simplify: simplify || false
       }
     }, (res) => {
-      if (chrome.runtime.lastError || !res || !res.success) {
-        console.warn('Backend Translation API error:', chrome.runtime.lastError?.message || res?.error || res?.message);
-        renderTranslationOverlay({ success: false, aiUnavailable: true, targetLanguage: targetLang, targetLanguageName: targetLangName }, extracted);
+      if (chrome.runtime.lastError || !res) {
+        console.warn('Backend Translation API error:', chrome.runtime.lastError?.message || 'No response');
+        renderTranslationOverlay({ success: false, aiUnavailable: true, message: 'Backend server offline or unreachable.', targetLanguage: targetLang, targetLanguageName: targetLangName }, extracted);
       } else {
-        const data = res.data;
+        const data = res.data || { success: false, aiUnavailable: true, targetLanguage: targetLang, targetLanguageName: targetLangName };
         activeTranslationData = { ...data, targetLang, targetLangName };
         renderTranslationOverlay(data, extracted);
 
@@ -528,6 +529,7 @@
         }
       }
     });
+
   }
 
   function showTranslationLoading(langName) {
@@ -1036,8 +1038,33 @@
         letter-spacing: ${letterSpacing}px !important;
         margin-bottom: ${paragraphSpacing}em !important;
       }
+
+      /* 7. Reading Font High Specificity Override */
+      ${(currentSettings.enableReadingFont !== false && currentSettings.fontFamily && currentSettings.fontFamily !== 'default') ? `
+        body.includify-font-${currentSettings.fontFamily},
+        body.includify-font-${currentSettings.fontFamily} *,
+        body.includify-font-${currentSettings.fontFamily} p,
+        body.includify-font-${currentSettings.fontFamily} h1,
+        body.includify-font-${currentSettings.fontFamily} h2,
+        body.includify-font-${currentSettings.fontFamily} h3,
+        body.includify-font-${currentSettings.fontFamily} h4,
+        body.includify-font-${currentSettings.fontFamily} h5,
+        body.includify-font-${currentSettings.fontFamily} h6,
+        body.includify-font-${currentSettings.fontFamily} li,
+        body.includify-font-${currentSettings.fontFamily} blockquote,
+        body.includify-font-${currentSettings.fontFamily} div,
+        body.includify-font-${currentSettings.fontFamily} span,
+        body.includify-font-${currentSettings.fontFamily} a,
+        #includify-focus-reader-root,
+        #includify-focus-reader-root *,
+        #includify-root,
+        #includify-root * {
+          font-family: ${currentSettings.fontFamily === 'atkinson' ? "'Atkinson Hyperlegible', sans-serif" : (currentSettings.fontFamily === 'opendyslexic' ? "'OpenDyslexic', 'Comic Sans MS', sans-serif" : (currentSettings.fontFamily === 'lexend' ? "'Lexend', sans-serif" : (currentSettings.fontFamily === 'verdana' ? "Verdana, sans-serif" : (currentSettings.fontFamily === 'noto' ? "'Noto Sans', sans-serif" : "sans-serif"))))} !important;
+        }
+      ` : ''}
     `;
   }
+
 
   /* ==========================================================================
      5. VISUAL ACCESSIBILITY ENGINE

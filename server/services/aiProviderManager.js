@@ -4,23 +4,25 @@ const crypto = require('crypto');
 
 class AIProviderManager {
   constructor() {
-    let primary = (process.env.PRIMARY_AI || 'gemini').toLowerCase();
-    if (primary === 'xai') primary = 'grok';
-    let fallback = (process.env.FALLBACK_AI || 'grok').toLowerCase();
-    if (fallback === 'xai') fallback = 'grok';
+    let primary = (process.env.PRIMARY_AI || 'grok').toLowerCase();
+    if (primary === 'xai' || primary === 'groq') primary = 'grok';
+    let fallback = (process.env.FALLBACK_AI || 'gemini').toLowerCase();
+    if (fallback === 'xai' || fallback === 'groq') fallback = 'grok';
 
     this.primaryName = primary;
     this.fallbackName = fallback;
 
-    const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.GROQ_API_KEY;
+    const grokKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY || process.env.GROQ_API_KEY;
     const grokProviderInstance = new GrokProvider(grokKey);
 
     // Instantiate providers
     this.providers = {
       gemini: new GeminiProvider(process.env.GEMINI_API_KEY),
       grok: grokProviderInstance,
-      xai: grokProviderInstance
+      xai: grokProviderInstance,
+      groq: grokProviderInstance
     };
+
 
     // In-memory cache for fast repeated requests (15-min TTL)
     this.cache = new Map();
