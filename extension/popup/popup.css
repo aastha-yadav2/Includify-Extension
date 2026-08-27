@@ -1,4 +1,6 @@
 /* Includify Accessibility Extension - Popup Styles */
+@import url('https://fonts.cdnfonts.com/css/open-dyslexic');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Lexend:wght@300;400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 :root {
   --primary-color: #4f46e5;
   --primary-hover: #4338ca;

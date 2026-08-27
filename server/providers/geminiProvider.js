@@ -101,17 +101,7 @@ Return ONLY a valid JSON object matching this exact schema:
 `;
 
     try {
-      const response = await this.client.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-          maxOutputTokens: 2048
-        }
-      });
-
-      const responseText = response.text;
+      const responseText = await this._generateWithFallback(prompt);
       const parsed = parseAIJsonResponse(responseText, trimmedText);
       const simplifiedText = parsed.simplifiedText || parsed.resultText || trimmedText;
 
@@ -163,17 +153,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
 `;
 
     try {
-      const response = await this.client.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-          maxOutputTokens: 2048
-        }
-      });
-
-      const responseText = response.text;
+      const responseText = await this._generateWithFallback(prompt);
       const parsed = parseAIJsonResponse(responseText, trimmedText);
       const translatedText = parsed.translatedText || parsed.resultText || trimmedText;
 
@@ -190,6 +170,31 @@ Respond ONLY with a valid JSON object matching this exact schema:
     } catch (err) {
       throw this._parseGeminiError(err);
     }
+  }
+
+  async _generateWithFallback(prompt) {
+    const candidateModels = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let lastErr = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        const response = await this.client.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+            maxOutputTokens: 2048
+          }
+        });
+        if (response && response.text) return response.text;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[GeminiProvider] Model '${modelName}' failed: ${err.message}`);
+      }
+    }
+
+    throw lastErr || new Error('All Gemini candidate models failed');
   }
 
   _parseGeminiError(err) {

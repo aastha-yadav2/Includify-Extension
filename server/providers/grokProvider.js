@@ -34,34 +34,51 @@ function parseAIJsonResponse(contentStr, fallbackText = '') {
 
   // 4. Regex extraction for resultText, simplifiedText, or translatedText
   const resultMatch = cleaned.match(/"(?:resultText|simplifiedText|translatedText)"\s*:\s*"([\s\S]*?)"\s*[,\}]/i);
+  const summaryMatch = cleaned.match(/"summary"\s*:\s*"([\s\S]*?)"\s*[,\}]/i);
+  const keyPointsMatch = cleaned.match(/"keyPoints"\s*:\s*\[([\s\S]*?)\]/i);
+  let keyPoints = [];
+  if (keyPointsMatch && keyPointsMatch[1]) {
+    keyPoints = keyPointsMatch[1]
+      .split(/",\s*"|",\n\s*"/)
+      .map(k => k.replace(/[\"\[\]]/g, '').trim())
+      .filter(k => k.length > 0);
+  }
+
   if (resultMatch && resultMatch[1]) {
-    return { resultText: resultMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') };
+    const resText = resultMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+    return {
+      simplifiedText: resText,
+      translatedText: resText,
+      resultText: resText,
+      summary: summaryMatch && summaryMatch[1] ? summaryMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '',
+      keyPoints
+    };
   }
 
   // 5. If response is plain text (not JSON), use it directly as resultText!
   const plainText = cleaned.replace(/[\{\}\"]/g, '').trim();
-  return { resultText: plainText || fallbackText };
+  return { resultText: plainText || fallbackText, simplifiedText: plainText || fallbackText, translatedText: plainText || fallbackText };
 }
 
 class GrokProvider extends BaseAIProvider {
   constructor(apiKey) {
     super('grok');
-    this.apiKey = apiKey;
+    this.apiKey = apiKey ? apiKey.trim() : '';
   }
 
   isConfigured() {
-    return !!(this.apiKey && this.apiKey !== 'your_grok_key' && this.apiKey.trim().length > 0);
+    return !!(this.apiKey && this.apiKey !== 'your_grok_key' && this.apiKey !== 'your_grok_or_groq_api_key' && this.apiKey.length > 0);
   }
 
   async generateSimplification(text, options = {}) {
     if (!this.isConfigured()) {
-      const err = new Error('Grok/Groq API Key is missing or default');
+      const err = new Error('Grok API Key is missing or unconfigured');
       err.status = 401;
       throw err;
     }
 
     const { title = 'Web Content' } = options;
-    const trimmedText = text.trim().substring(0, 2500);
+    const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
 You are an expert cognitive accessibility engine for Includify.
@@ -105,13 +122,13 @@ Return ONLY a valid JSON object matching this exact schema:
 
   async translateText(text, targetLanguage = 'hi', options = {}) {
     if (!this.isConfigured()) {
-      const err = new Error('Grok/Groq API Key is missing or default');
+      const err = new Error('Grok API Key is missing or unconfigured');
       err.status = 401;
       throw err;
     }
 
     const { targetLanguageName = 'Hindi' } = options;
-    const trimmedText = text.trim().substring(0, 2500);
+    const trimmedText = text.trim().substring(0, 3000);
 
     const prompt = `
 You are an expert translator and cognitive accessibility assistant.
@@ -159,8 +176,8 @@ Respond ONLY with a valid JSON object matching this exact schema:
       : 'https://api.x.ai/v1/chat/completions';
     
     const candidateModels = isGroqKey 
-      ? ['openai/gpt-oss-120b', 'groq/compound', 'openai/gpt-oss-20b'] 
-      : ['grok-2-latest', 'grok-beta'];
+      ? ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama-3.2-3b-preview', 'llama-3.2-1b-preview', 'llama3-8b-8192'] 
+      : ['grok-2-latest', 'grok-2', 'grok-beta', 'grok-3', 'grok-2-1212', 'grok-vision-beta'];
 
     let lastError = null;
 
@@ -213,3 +230,4 @@ Respond ONLY with a valid JSON object matching this exact schema:
 }
 
 module.exports = GrokProvider;
+

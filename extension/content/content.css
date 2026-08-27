@@ -1,10 +1,11 @@
 /* Includify Content Script Isolated Overlay & Injected Styles */
 @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Lexend:wght@300;400;500;600;700&family=Noto+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.cdnfonts.com/css/open-dyslexic');
 
 /* OpenDyslexic Web Font Definition */
 @font-face {
   font-family: 'OpenDyslexic';
-  src: local('OpenDyslexic'), local('Comic Sans MS'), local('Comic Sans');
+  src: local('OpenDyslexic'), local('OpenDyslexic-Regular'), url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/fonts/OpenDyslexic-Regular.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
 }
@@ -23,7 +24,7 @@ body.includify-dyslexia-active * {
 
 /* -------------------------------------------------------------
  * 1b. Accessibility Reading Font System
- * Applies font strictly to readable elements (article, main, p, h1-h6, li, blockquote)
+ * Applies font strictly to readable elements & Includify overlays
  * ------------------------------------------------------------- */
 
 /* OpenDyslexic */
@@ -38,9 +39,18 @@ body.includify-font-opendyslexic h5,
 body.includify-font-opendyslexic h6,
 body.includify-font-opendyslexic li,
 body.includify-font-opendyslexic blockquote,
+body.includify-font-opendyslexic section,
+body.includify-font-opendyslexic div,
+body.includify-font-opendyslexic span,
+body.includify-font-opendyslexic a,
+body.includify-font-opendyslexic td,
+body.includify-font-opendyslexic label,
 body.includify-font-opendyslexic .includify-reader-paragraph,
-body.includify-font-opendyslexic .includify-reader-container {
-  font-family: OpenDyslexic, 'Comic Sans MS', sans-serif !important;
+body.includify-font-opendyslexic .includify-reader-container,
+body.includify-font-opendyslexic #includify-root .simplified-text-box,
+body.includify-font-opendyslexic #includify-root .reader-body,
+body.includify-font-opendyslexic #includify-text-container p {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif !important;
 }
 
 /* Lexend */
@@ -55,9 +65,18 @@ body.includify-font-lexend h5,
 body.includify-font-lexend h6,
 body.includify-font-lexend li,
 body.includify-font-lexend blockquote,
+body.includify-font-lexend section,
+body.includify-font-lexend div,
+body.includify-font-lexend span,
+body.includify-font-lexend a,
+body.includify-font-lexend td,
+body.includify-font-lexend label,
 body.includify-font-lexend .includify-reader-paragraph,
-body.includify-font-lexend .includify-reader-container {
-  font-family: Lexend, sans-serif !important;
+body.includify-font-lexend .includify-reader-container,
+body.includify-font-lexend #includify-root .simplified-text-box,
+body.includify-font-lexend #includify-root .reader-body,
+body.includify-font-lexend #includify-text-container p {
+  font-family: 'Lexend', sans-serif !important;
 }
 
 /* Atkinson Hyperlegible */
@@ -72,8 +91,17 @@ body.includify-font-atkinson h5,
 body.includify-font-atkinson h6,
 body.includify-font-atkinson li,
 body.includify-font-atkinson blockquote,
+body.includify-font-atkinson section,
+body.includify-font-atkinson div,
+body.includify-font-atkinson span,
+body.includify-font-atkinson a,
+body.includify-font-atkinson td,
+body.includify-font-atkinson label,
 body.includify-font-atkinson .includify-reader-paragraph,
-body.includify-font-atkinson .includify-reader-container {
+body.includify-font-atkinson .includify-reader-container,
+body.includify-font-atkinson #includify-root .simplified-text-box,
+body.includify-font-atkinson #includify-root .reader-body,
+body.includify-font-atkinson #includify-text-container p {
   font-family: 'Atkinson Hyperlegible', sans-serif !important;
 }
 
@@ -89,8 +117,17 @@ body.includify-font-verdana h5,
 body.includify-font-verdana h6,
 body.includify-font-verdana li,
 body.includify-font-verdana blockquote,
+body.includify-font-verdana section,
+body.includify-font-verdana div,
+body.includify-font-verdana span,
+body.includify-font-verdana a,
+body.includify-font-verdana td,
+body.includify-font-verdana label,
 body.includify-font-verdana .includify-reader-paragraph,
-body.includify-font-verdana .includify-reader-container {
+body.includify-font-verdana .includify-reader-container,
+body.includify-font-verdana #includify-root .simplified-text-box,
+body.includify-font-verdana #includify-root .reader-body,
+body.includify-font-verdana #includify-text-container p {
   font-family: Verdana, sans-serif !important;
 }
 
@@ -106,8 +143,17 @@ body.includify-font-noto h5,
 body.includify-font-noto h6,
 body.includify-font-noto li,
 body.includify-font-noto blockquote,
+body.includify-font-noto section,
+body.includify-font-noto div,
+body.includify-font-noto span,
+body.includify-font-noto a,
+body.includify-font-noto td,
+body.includify-font-noto label,
 body.includify-font-noto .includify-reader-paragraph,
-body.includify-font-noto .includify-reader-container {
+body.includify-font-noto .includify-reader-container,
+body.includify-font-noto #includify-root .simplified-text-box,
+body.includify-font-noto #includify-root .reader-body,
+body.includify-font-noto #includify-text-container p {
   font-family: 'Noto Sans', sans-serif !important;
 }
 

@@ -21,6 +21,8 @@ app.use(express.json({ limit: '5mb' }));
 app.get('/api/health', (req, res) => {
   const primary = process.env.PRIMARY_AI || 'gemini';
   const fallback = process.env.FALLBACK_AI || 'grok';
+  const geminiOk = aiProviderManager.providers.gemini.isConfigured();
+  const grokOk = aiProviderManager.providers.grok.isConfigured();
 
   res.json({
     status: 'ok',
@@ -28,9 +30,9 @@ app.get('/api/health', (req, res) => {
     version: '2.0.0',
     primaryAI: primary,
     fallbackAI: fallback,
-    geminiConfigured: aiProviderManager.providers.gemini.isConfigured(),
-    grokConfigured: aiProviderManager.providers.grok.isConfigured(),
-    activeProvider: aiProviderManager.providers.gemini.isConfigured() ? 'gemini' : 'grok',
+    geminiConfigured: geminiOk,
+    grokConfigured: grokOk,
+    activeProvider: (aiProviderManager.primaryName === 'grok' && grokOk) ? 'grok' : (geminiOk ? 'gemini' : (grokOk ? 'grok' : 'none')),
     timestamp: new Date().toISOString()
   });
 });
