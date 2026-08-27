@@ -176,7 +176,7 @@ Respond ONLY with a valid JSON object matching this exact schema:
       : 'https://api.x.ai/v1/chat/completions';
     
     const candidateModels = isGroqKey 
-      ? ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama-3.2-3b-preview', 'llama-3.2-1b-preview', 'llama3-8b-8192'] 
+      ? ['groq/compound', 'groq/compound-mini', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] 
       : ['grok-2-latest', 'grok-2', 'grok-beta', 'grok-3', 'grok-2-1212', 'grok-vision-beta'];
 
     let lastError = null;
